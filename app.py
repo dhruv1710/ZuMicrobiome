@@ -50,17 +50,22 @@ def track():
 
 @app.route('/validate-kit/<kit_id>')
 def validate_kit(kit_id):
-    from models import AnonymousUser, Admin
-    
-    # Check validity silently
-    user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
+    from models import AnonymousUser, Admin, KitCode
+
+    # Check if it's an admin code
     admin = Admin.query.filter_by(username=kit_id).first()
-    
     if admin and admin.is_active:
         session['admin_id'] = admin.id
-        return jsonify({"valid": True})
-    
-    return jsonify({"valid": user is not None})
+        return jsonify({"valid": True, "is_admin": True})
+
+    # Check if it's a valid kit ID
+    user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
+    kit_code = KitCode.query.filter_by(code=kit_id).first()
+
+    # Only validate if both entries exist and the kit code is active
+    is_valid = user is not None and kit_code is not None and kit_code.is_active
+
+    return jsonify({"valid": is_valid, "is_admin": False})
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -104,13 +109,21 @@ def generate_kit_codes():
         return redirect(url_for('admin_dashboard'))
 
     for _ in range(quantity):
+        # Generate a new kit ID
+        new_kit_id = AnonymousUser.generate_kit_id()
+
+        # Create KitCode entry
         kit_code = KitCode(
-            code=AnonymousUser.generate_kit_id(),
+            code=new_kit_id,
             batch_name=batch_name,
             menu_data=menu_json,
             created_by=session['admin_id']
         )
         db.session.add(kit_code)
+
+        # Create corresponding AnonymousUser entry
+        anon_user = AnonymousUser(kit_id=new_kit_id)
+        db.session.add(anon_user)
 
     db.session.commit()
     flash(f'Successfully generated {quantity} new kit codes', 'success')
@@ -283,6 +296,10 @@ def save_tracking():
 @app.route('/export-data/<kit_id>', methods=['POST'])
 def export_data(kit_id):
     from models import TrackingEntry
+    from cryptography.fernet import Fernet
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    import base64
 
     # Generate a secure key for encryption
     password = app.secret_key.encode()
