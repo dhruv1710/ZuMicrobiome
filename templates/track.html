@@ -97,7 +97,7 @@
                                 <div class="stool-type-card">
                                     <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
                                     <label class="btn btn-outline-primary w-100" for="type{{ i }}">
-                                        <img src="{{ url_for('static', filename='images/type' + i|string + '.svg') }}" 
+                                        <img src="{{ url_for('static', filename='images/type' + i|string + '.svg') }}"
                                              alt="Type {{ i }}" class="img-fluid mb-2">
                                         <span class="d-block">Type {{ i }}</span>
                                     </label>
@@ -121,23 +121,13 @@
                     <h3 class="card-title">Daily Mood</h3>
                     <div class="mood-tracker">
                         <canvas id="moodChart"></canvas>
-                        <div class="mood-input mt-4">
-                            <div class="row align-items-center">
-                                <div class="col-md-4">
-                                    <input type="time" class="form-control" id="moodTime" value="12:00">
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="range" class="form-range" min="1" max="5" id="moodRange" value="3">
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="button" class="btn btn-primary" onclick="addMoodEntry()">Add Entry</button>
-                                </div>
-                            </div>
-                            <div class="mood-labels d-flex justify-content-between mt-2">
-                                <span>😢</span>
-                                <span>😐</span>
-                                <span>😊</span>
-                            </div>
+                        <div class="mood-labels d-flex justify-content-between mt-2">
+                            <span>😢 Sad</span>
+                            <span>😐 Neutral</span>
+                            <span>😊 Happy</span>
+                        </div>
+                        <div class="text-muted text-center mt-2">
+                            Click on the timeline to add mood points. Drag points up for happier, down for sadder.
                         </div>
                     </div>
                 </div>
@@ -165,8 +155,11 @@
                 label: 'Mood',
                 data: [],
                 borderColor: '#FFD700',
-                tension: 0.4,
-                fill: false
+                tension: 0,
+                fill: false,
+                pointBackgroundColor: '#FFD700',
+                pointRadius: 6,
+                pointHoverRadius: 8
             }]
         },
         options: {
@@ -181,21 +174,80 @@
                             return ['😢', '😞', '😐', '🙂', '😊'][value-1];
                         }
                     }
+                },
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'HH:mm'
+                        }
+                    },
+                    min: '00:00',
+                    max: '23:59'
                 }
             },
             plugins: {
                 legend: {
                     display: false
                 }
+            },
+            interaction: {
+                mode: 'nearest',
+                intersect: false
+            },
+            onClick: function(event, elements) {
+                const canvasPosition = Chart.helpers.getRelativePosition(event, moodChart);
+                const x = moodChart.scales.x.getValueForPixel(canvasPosition.x);
+                const y = moodChart.scales.y.getValueForPixel(canvasPosition.y);
+
+                // Round y to nearest whole number between 1-5
+                const mood = Math.max(1, Math.min(5, Math.round(y)));
+
+                // Format time as HH:mm
+                const time = new Date(x);
+                const timeString = time.toTimeString().substring(0, 5);
+
+                addMoodPoint(timeString, mood);
+            },
+            dragData: true,
+            dragY: true,
+            dragX: false,
+            onDragStart: function(e) {
+                // Optional: Add visual feedback when dragging starts
+            },
+            onDrag: function(e, datasetIndex, index, value) {
+                // Constrain the value between 1 and 5
+                return Math.max(1, Math.min(5, Math.round(value)));
+            },
+            onDragEnd: function(e, datasetIndex, index, value) {
+                // Update the mood value after dragging
+                updateMoodPoint(index, value);
             }
         }
     });
 
-    function addMoodEntry() {
-        const time = document.getElementById('moodTime').value;
-        const mood = document.getElementById('moodRange').value;
+    function addMoodPoint(time, mood) {
+        // Add new point and sort by time
         moodChart.data.labels.push(time);
         moodChart.data.datasets[0].data.push(mood);
+
+        // Sort points by time
+        const combined = moodChart.data.labels.map((label, i) => ({
+            label,
+            data: moodChart.data.datasets[0].data[i]
+        }));
+
+        combined.sort((a, b) => a.label.localeCompare(b.label));
+
+        moodChart.data.labels = combined.map(point => point.label);
+        moodChart.data.datasets[0].data = combined.map(point => point.data);
+
+        moodChart.update();
+    }
+
+    function updateMoodPoint(index, value) {
+        moodChart.data.datasets[0].data[index] = value;
         moodChart.update();
     }
 
@@ -217,7 +269,5 @@
         console.log("Saving tracking data:", moodEntries);
         // Send data to server using AJAX or Fetch API
     }
-
-
 </script>
 {% endblock %}

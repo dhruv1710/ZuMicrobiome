@@ -74,17 +74,18 @@ function toggleCategory(categoryId) {
 // Added mood tracking variables and functions
 let moodEntries = [];
 
-function addMoodEntry() {
-    const time = document.getElementById('moodTime').value;
-    const mood = parseInt(document.getElementById('moodRange').value);
-
-    // Add entry to array
+function addMoodPoint(time, mood) {
     moodEntries.push({ time, mood });
 
     // Sort entries by time
     moodEntries.sort((a, b) => a.time.localeCompare(b.time));
 
     // Update chart
+    updateMoodChart();
+}
+
+function updateMoodPoint(index, value) {
+    moodEntries[index].mood = value;
     updateMoodChart();
 }
 
