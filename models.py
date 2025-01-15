@@ -1,4 +1,3 @@
-
 from app import db
 import uuid
 from datetime import datetime
@@ -19,7 +18,6 @@ class TrackingEntry(db.Model):
     meals = db.Column(db.JSON)
     stool_type = db.Column(db.String(10))
     mood = db.Column(db.Integer)
-    shared_with_community = db.Column(db.Boolean, default=True)
     shared_with_community = db.Column(db.Boolean, default=True)
 
 class CommunityStats(db.Model):
