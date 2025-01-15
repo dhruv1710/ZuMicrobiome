@@ -107,13 +107,23 @@ function saveTracking() {
         mood: parseInt(document.getElementById('moodSlider').value)
     };
 
-    // Save to localStorage
-    const existingData = JSON.parse(localStorage.getItem('healthData') || '[]');
-    existingData.push(trackingData);
-    localStorage.setItem('healthData', JSON.stringify(existingData));
-
-    alert('Data saved successfully!');
-    window.location.href = '/';
+    // Save to database
+    fetch('/save-tracking', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(trackingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Data saved successfully!');
+        window.location.href = '/';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save data');
+    });
 }
 
 // Kit ID validation

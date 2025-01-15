@@ -61,3 +61,16 @@ with app.app_context():
         db.session.add(test_kit)
         db.session.commit()
         logging.info("Created test kit ID: TEST123456")
+@app.route('/save-tracking', methods=['POST'])
+def save_tracking():
+    from models import TrackingEntry
+    data = request.json
+    entry = TrackingEntry(
+        kit_id=data['kitId'],
+        meals=data['meals'],
+        stool_type=data.get('stool', {}).get('type'),
+        mood=data['mood']
+    )
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify({"success": True})
