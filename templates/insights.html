@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Daily Wellness Insights</h2>
+                    
+                    {% if not has_data %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No tracking data available for today. Start tracking your health to receive personalized insights!</p>
+                    </div>
+                    {% else %}
+                    
+                    <!-- Mood Summary -->
+                    <div class="insight-section mb-4">
+                        <h3 class="h5 mb-3">🎭 Mood Check</h3>
+                        <div class="insight-content">
+                            <p>{{ insights.mood_summary }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Stool Health -->
+                    <div class="insight-section mb-4">
+                        <h3 class="h5 mb-3">💪 Digestive Health</h3>
+                        <div class="insight-content">
+                            <p>{{ insights.stool_health }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Meal Patterns -->
+                    <div class="insight-section">
+                        <h3 class="h5 mb-3">🍽️ Meal Summary</h3>
+                        <div class="insight-content">
+                            {% if insights.meal_patterns %}
+                            <ul class="list-unstyled">
+                                {% for meal in insights.meal_patterns %}
+                                <li class="mb-2">{{ meal }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p>No meal data recorded today.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-center mt-4">
+                        <a href="/track" class="btn btn-primary me-2">Track New Entry</a>
+                        <a href="/" class="btn btn-secondary">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

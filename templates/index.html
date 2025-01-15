@@ -9,10 +9,26 @@
                 <div id="kit-input" class="mb-4">
                     <label for="kitId" class="form-label">Enter your Kit ID</label>
                     <input type="text" class="form-control" id="kitId" placeholder="Enter your unique kit ID">
-                    <button class="btn btn-primary mt-3 w-100" onclick="validateKitId()">Start Tracking</button>
+                    <div class="d-grid gap-2 mt-3">
+                        <button class="btn btn-primary" onclick="validateKitId()">Start Tracking</button>
+                        <a href="#" class="btn btn-secondary" onclick="viewInsights()">View Daily Insights</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function viewInsights() {
+        const kitId = localStorage.getItem('kitId');
+        if (!kitId) {
+            alert('Please enter your Kit ID first');
+            return;
+        }
+        window.location.href = `/insights/${kitId}`;
+    }
+</script>
 {% endblock %}
