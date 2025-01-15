@@ -97,8 +97,11 @@
                                 <div class="stool-type-card">
                                     <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
                                     <label class="btn btn-outline-primary w-100" for="type{{ i }}">
+                                        <div class="color-selector mb-2">
+                                            <input type="color" class="form-control form-control-color" id="color{{ i }}" value="#8B4513">
+                                        </div>
                                         <img src="{{ url_for('static', filename='images/type' + i|string + '.svg') }}"
-                                             alt="Type {{ i }}" class="img-fluid mb-2">
+                                             alt="Type {{ i }}" class="img-fluid mb-2" id="stoolImage{{ i }}">
                                         <span class="d-block">Type {{ i }}</span>
                                     </label>
                                 </div>
@@ -122,11 +125,13 @@
                     <div class="mood-tracker p-4">
                         <input type="range" class="form-range" min="1" max="7" step="1" id="moodSlider" value="4">
                         <div class="mood-labels d-flex justify-content-between mt-2">
-                            <span>😢 Very Sad</span>
-                            <span>😕 Down</span>
-                            <span>😐 Neutral</span>
-                            <span>🙂 Good</span>
-                            <span>😊 Very Happy</span>
+                            <span>😢</span>
+                            <span>😞</span>
+                            <span>😕</span>
+                            <span>😐</span>
+                            <span>🙂</span>
+                            <span>😊</span>
+                            <span>😄</span>
                         </div>
                     </div>
                 </div>
@@ -142,6 +147,24 @@
 
 {% block scripts %}
 <script>
-    //All chart related javascript code removed.
+    // Handle color picker changes
+    for (let i = 1; i <= 7; i++) {
+        const colorPicker = document.getElementById(`color${i}`);
+        const stoolImage = document.getElementById(`stoolImage${i}`);
+
+        colorPicker.addEventListener('input', function(e) {
+            // Get the SVG content
+            fetch(stoolImage.src)
+                .then(response => response.text())
+                .then(svgContent => {
+                    // Replace the fill color in the SVG
+                    const newSvgContent = svgContent.replace(/#8B4513/g, e.target.value);
+                    // Create a blob from the modified SVG
+                    const blob = new Blob([newSvgContent], {type: 'image/svg+xml'});
+                    // Update the image source
+                    stoolImage.src = URL.createObjectURL(blob);
+                });
+        });
+    }
 </script>
 {% endblock %}

@@ -270,3 +270,61 @@ body {
     transform: scale(1.2);
     cursor: pointer;
 }
+
+
+/* Add to the end of the existing CSS file */
+
+.color-selector {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.form-control-color {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    border: var(--border-thickness) solid #000;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform var(--transition-timing);
+}
+
+.form-control-color:hover {
+    transform: scale(1.1);
+}
+
+.mood-labels {
+    font-size: 2rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.mood-labels span {
+    cursor: pointer;
+    transition: transform var(--transition-timing);
+}
+
+.mood-labels span:hover {
+    transform: scale(1.2);
+}
+
+.form-range {
+    height: 2rem;
+    transition: all var(--transition-timing);
+}
+
+.form-range::-webkit-slider-thumb {
+    width: 2rem;
+    height: 2rem;
+    background: var(--secondary-color);
+    border: var(--border-thickness) solid #000;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform var(--transition-timing);
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
