@@ -73,34 +73,8 @@ function toggleCategory(categoryId) {
     }
 }
 
-// Added mood tracking variables and functions
-let moodEntries = [];
 
-function addMoodPoint(time, mood) {
-    moodEntries.push({ time, mood });
-
-    // Sort entries by time
-    moodEntries.sort((a, b) => a.time.localeCompare(b.time));
-
-    // Update chart
-    updateMoodChart();
-}
-
-function updateMoodPoint(index, value) {
-    moodEntries[index].mood = value;
-    updateMoodChart();
-}
-
-function updateMoodChart() {
-    const labels = moodEntries.map(entry => entry.time);
-    const data = moodEntries.map(entry => entry.mood);
-
-    moodChart.data.labels = labels;
-    moodChart.data.datasets[0].data = data;
-    moodChart.update();
-}
-
-// Modified saveTracking function to handle hierarchical meal data and mood entries
+// Modified saveTracking function to handle hierarchical meal data and simplified mood
 function saveTracking() {
     const getMealData = (mealType) => {
         const foods = {};
@@ -130,16 +104,13 @@ function saveTracking() {
         stool: {
             type: document.querySelector('input[name="stoolType"]:checked')?.value
         },
-        moods: moodEntries
+        mood: parseInt(document.getElementById('moodSlider').value)
     };
 
     // Save to localStorage
     const existingData = JSON.parse(localStorage.getItem('healthData') || '[]');
     existingData.push(trackingData);
     localStorage.setItem('healthData', JSON.stringify(existingData));
-
-    // Reset mood entries for next tracking
-    moodEntries = [];
 
     alert('Data saved successfully!');
     window.location.href = '/';

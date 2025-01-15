@@ -119,15 +119,14 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <h3 class="card-title">Daily Mood</h3>
-                    <div class="mood-tracker">
-                        <canvas id="moodChart"></canvas>
+                    <div class="mood-tracker p-4">
+                        <input type="range" class="form-range" min="1" max="7" step="1" id="moodSlider" value="4">
                         <div class="mood-labels d-flex justify-content-between mt-2">
-                            <span>😢 Sad</span>
+                            <span>😢 Very Sad</span>
+                            <span>😕 Down</span>
                             <span>😐 Neutral</span>
-                            <span>😊 Happy</span>
-                        </div>
-                        <div class="text-muted text-center mt-2">
-                            Click on the line to add mood points. Drag points up for happier, down for sadder.
+                            <span>🙂 Good</span>
+                            <span>😊 Very Happy</span>
                         </div>
                     </div>
                 </div>
@@ -143,96 +142,6 @@
 
 {% block scripts %}
 <script>
-    // Initialize mood chart
-    const ctx = document.getElementById('moodChart').getContext('2d');
-    const moodChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
-            datasets: [{
-                label: 'Mood',
-                data: Array.from({length: 24}, () => 4), // Neutral line (4 is middle of 1-7)
-                borderColor: '#FFD700',
-                tension: 0,
-                fill: false,
-                pointBackgroundColor: '#FFD700',
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                pointBorderWidth: 2,
-                pointStyle: 'circle',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    min: 1,
-                    max: 7,
-                    ticks: {
-                        stepSize: 1,
-                        callback: function(value) {
-                            const moods = ['😢 Very Sad', '😞 Sad', '😕 Down', '😐 Neutral', '🙂 Good', '😊 Happy', '😄 Very Happy'];
-                            return moods[value-1];
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: true
-                    },
-                    ticks: {
-                        maxRotation: 0
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            interaction: {
-                mode: 'nearest',
-                intersect: false,
-                axis: 'x'
-            },
-            animation: {
-                duration: 150
-            },
-            onClick: function(event, elements) {
-                const canvasPosition = Chart.helpers.getRelativePosition(event, moodChart);
-                const x = moodChart.scales.x.getValueForPixel(canvasPosition.x);
-                const y = moodChart.scales.y.getValueForPixel(canvasPosition.y);
-
-                // Round y to nearest whole number between 1-7
-                const mood = Math.max(1, Math.min(7, Math.round(y)));
-
-                // Get the hour from x index
-                const hour = Math.floor(x);
-                if (hour >= 0 && hour < 24) {
-                    moodChart.data.datasets[0].data[hour] = mood;
-                    moodChart.update('none'); // Use 'none' for smoother updates
-                }
-            },
-            dragData: true,
-            dragX: false,
-            dragDataRound: 1,
-            dragOptions: {
-                animationDuration: 150
-            },
-            onDragStart: function(e, element) {
-                element.element.options.pointRadius = 8;
-                moodChart.update('none');
-            },
-            onDrag: function(e, datasetIndex, index, value) {
-                return Math.max(1, Math.min(7, Math.round(value)));
-            },
-            onDragEnd: function(e, element) {
-                element.element.options.pointRadius = 6;
-                moodChart.update('none');
-            }
-        }
-    });
+    //All chart related javascript code removed.
 </script>
 {% endblock %}
