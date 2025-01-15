@@ -3,11 +3,16 @@
 {% block content %}
 <div class="tracking-container">
     <h2 class="mb-4">Daily Health Tracking</h2>
-    
+
     <!-- Meal Tracking -->
     <div class="card mb-4">
         <div class="card-body">
             <h3 class="card-title">Meals</h3>
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="mealVoiceBtn" onclick="startVoiceRecording('meal')">
+                    <i data-feather="mic"></i> Record Meal
+                </button>
+            </div>
             <div class="meal-tracking">
                 <div class="meal-section">
                     <h4>Breakfast</h4>
@@ -22,6 +27,9 @@
                 </div>
                 <!-- Similar sections for lunch and dinner -->
             </div>
+            <div id="mealVoiceOutput" class="mt-3 alert alert-info d-none">
+                <p class="mb-0">Voice recognition active...</p>
+            </div>
         </div>
     </div>
 
@@ -33,14 +41,26 @@
                 <label class="form-label">Shape Type</label>
                 <select class="form-select" id="stoolShape">
                     <option value="">Select shape...</option>
-                    <!-- Options 1-7 -->
+                    <option value="1">Type 1 - Separate hard lumps</option>
+                    <option value="2">Type 2 - Lumpy and sausage-like</option>
+                    <option value="3">Type 3 - Sausage with cracks</option>
+                    <option value="4">Type 4 - Smooth and soft</option>
+                    <option value="5">Type 5 - Soft blobs</option>
+                    <option value="6">Type 6 - Mushy consistency</option>
+                    <option value="7">Type 7 - Liquid consistency</option>
                 </select>
             </div>
             <div class="mb-3">
                 <label class="form-label">Color</label>
                 <select class="form-select" id="stoolColor">
                     <option value="">Select color...</option>
-                    <!-- 10 color options -->
+                    <option value="brown">Brown</option>
+                    <option value="dark_brown">Dark Brown</option>
+                    <option value="green">Green</option>
+                    <option value="yellow">Yellow</option>
+                    <option value="black">Black</option>
+                    <option value="red">Red</option>
+                    <option value="gray">Gray/Clay</option>
                 </select>
             </div>
             <!-- Other stool characteristics -->
@@ -51,6 +71,11 @@
     <div class="card mb-4">
         <div class="card-body">
             <h3 class="card-title">Daily Mood</h3>
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="moodVoiceBtn" onclick="startVoiceRecording('mood')">
+                    <i data-feather="mic"></i> Record Mood
+                </button>
+            </div>
             <div class="mood-tracker">
                 <input type="range" class="form-range" min="1" max="5" id="moodRange">
                 <div class="mood-labels d-flex justify-content-between">
@@ -59,9 +84,21 @@
                     <span>😊</span>
                 </div>
             </div>
+            <div id="moodVoiceOutput" class="mt-3 alert alert-info d-none">
+                <p class="mb-0">Voice recognition active...</p>
+            </div>
         </div>
     </div>
 
     <button class="btn btn-primary w-100" onclick="saveTracking()">Save Today's Entry</button>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Feather icons after the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        feather.replace();
+    });
+</script>
 {% endblock %}
