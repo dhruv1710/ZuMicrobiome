@@ -127,7 +127,7 @@
                             <span>😊 Happy</span>
                         </div>
                         <div class="text-muted text-center mt-2">
-                            Click on the timeline to add mood points. Drag points up for happier, down for sadder.
+                            Click on the line to add mood points. Drag points up for happier, down for sadder.
                         </div>
                     </div>
                 </div>
@@ -150,41 +150,43 @@
     const moodChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [],
+            labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
             datasets: [{
                 label: 'Mood',
-                data: [],
+                data: Array.from({length: 24}, () => 4), // Neutral line (4 is middle of 1-7)
                 borderColor: '#FFD700',
                 tension: 0,
                 fill: false,
                 pointBackgroundColor: '#FFD700',
                 pointRadius: 6,
-                pointHoverRadius: 8
+                pointHoverRadius: 8,
+                pointBorderWidth: 2,
+                pointStyle: 'circle',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     min: 1,
-                    max: 5,
+                    max: 7,
                     ticks: {
                         stepSize: 1,
                         callback: function(value) {
-                            return ['😢', '😞', '😐', '🙂', '😊'][value-1];
+                            const moods = ['😢 Very Sad', '😞 Sad', '😕 Down', '😐 Neutral', '🙂 Good', '😊 Happy', '😄 Very Happy'];
+                            return moods[value-1];
                         }
                     }
                 },
                 x: {
-                    type: 'time',
-                    time: {
-                        unit: 'hour',
-                        displayFormats: {
-                            hour: 'HH:mm'
-                        }
+                    grid: {
+                        display: true
                     },
-                    min: '00:00',
-                    max: '23:59'
+                    ticks: {
+                        maxRotation: 0
+                    }
                 }
             },
             plugins: {
@@ -194,80 +196,117 @@
             },
             interaction: {
                 mode: 'nearest',
-                intersect: false
+                intersect: false,
+                axis: 'x'
+            },
+            animation: {
+                duration: 150
             },
             onClick: function(event, elements) {
                 const canvasPosition = Chart.helpers.getRelativePosition(event, moodChart);
                 const x = moodChart.scales.x.getValueForPixel(canvasPosition.x);
                 const y = moodChart.scales.y.getValueForPixel(canvasPosition.y);
 
-                // Round y to nearest whole number between 1-5
-                const mood = Math.max(1, Math.min(5, Math.round(y)));
+                // Round y to nearest whole number between 1-7
+                const mood = Math.max(1, Math.min(7, Math.round(y)));
 
-                // Format time as HH:mm
-                const time = new Date(x);
-                const timeString = time.toTimeString().substring(0, 5);
-
-                addMoodPoint(timeString, mood);
+                // Get the hour from x index
+                const hour = Math.floor(x);
+                if (hour >= 0 && hour < 24) {
+                    moodChart.data.datasets[0].data[hour] = mood;
+                    moodChart.update('none'); // Use 'none' for smoother updates
+                }
             },
             dragData: true,
-            dragY: true,
             dragX: false,
-            onDragStart: function(e) {
-                // Optional: Add visual feedback when dragging starts
+            dragDataRound: 1,
+            dragOptions: {
+                animationDuration: 150
+            },
+            onDragStart: function(e, element) {
+                element.element.options.pointRadius = 8;
+                moodChart.update('none');
             },
             onDrag: function(e, datasetIndex, index, value) {
-                // Constrain the value between 1 and 5
-                return Math.max(1, Math.min(5, Math.round(value)));
+                return Math.max(1, Math.min(7, Math.round(value)));
             },
-            onDragEnd: function(e, datasetIndex, index, value) {
-                // Update the mood value after dragging
-                updateMoodPoint(index, value);
+            onDragEnd: function(e, element) {
+                element.element.options.pointRadius = 6;
+                moodChart.update('none');
             }
         }
     });
 
-    function addMoodPoint(time, mood) {
-        // Add new point and sort by time
-        moodChart.data.labels.push(time);
-        moodChart.data.datasets[0].data.push(mood);
-
-        // Sort points by time
-        const combined = moodChart.data.labels.map((label, i) => ({
-            label,
-            data: moodChart.data.datasets[0].data[i]
-        }));
-
-        combined.sort((a, b) => a.label.localeCompare(b.label));
-
-        moodChart.data.labels = combined.map(point => point.label);
-        moodChart.data.datasets[0].data = combined.map(point => point.data);
-
-        moodChart.update();
-    }
-
-    function updateMoodPoint(index, value) {
-        moodChart.data.datasets[0].data[index] = value;
-        moodChart.update();
-    }
-
     function saveTracking() {
         const moodEntries = [];
-        const moodData = {
-            time: [],
-            mood: []
+        moodChart.data.labels.forEach((time, index) => {
+            moodEntries.push({
+                time: time,
+                mood: moodChart.data.datasets[0].data[index]
+            });
+        });
+
+        const trackingData = {
+            date: new Date().toISOString(),
+            kitId: localStorage.getItem('kitId'),
+            meals: {
+                breakfast: getMealData('breakfast'),
+                lunch: getMealData('lunch'),
+                dinner: getMealData('dinner')
+            },
+            stool: {
+                type: document.querySelector('input[name="stoolType"]:checked')?.value
+            },
+            moods: moodEntries
         };
-        for (let i = 0; i < moodChart.data.labels.length; i++) {
-            moodData.time.push(moodChart.data.labels[i]);
-            moodData.mood.push(moodChart.data.datasets[0].data[i]);
-        }
-        moodEntries.push(moodData);
 
-        //Existing saveTracking logic here,  modified to handle multiple mood entries.
-        //Existing code to save other tracking data
+        // Save to localStorage
+        const existingData = JSON.parse(localStorage.getItem('healthData') || '[]');
+        existingData.push(trackingData);
+        localStorage.setItem('healthData', JSON.stringify(existingData));
 
-        console.log("Saving tracking data:", moodEntries);
-        // Send data to server using AJAX or Fetch API
+        alert('Data saved successfully!');
+        window.location.href = '/';
+    }
+
+    function getMealData(mealType) {
+        const mealData = {};
+        const contentId = `${mealType}-content`;
+        const subcategories = document.querySelectorAll(`#${contentId} > .subcategory`);
+        subcategories.forEach(subcategory => {
+            const categoryHeader = subcategory.querySelector('.category-header');
+            const categoryName = categoryHeader.textContent.trim().toLowerCase().replace(' ', '-');
+            const checkboxes = subcategory.querySelectorAll('input[type="checkbox"]');
+            const selectedItems = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.id.split('-').pop());
+            if (selectedItems.length > 0) {
+                mealData[categoryName] = selectedItems;
+            }
+        });
+        return mealData;
+    }
+
+    function toggleCategory(id) {
+        const categoryContent = document.getElementById(`${id}-content`);
+        categoryContent.classList.toggle('d-none');
+        const icon = document.querySelector(`[onclick="toggleCategory('${id}')"] .category-icon`);
+        icon.classList.toggle('rotate-90');
+    }
+
+    function nextStep(step) {
+        document.getElementById(`step${step}`).classList.remove('d-none');
+        document.getElementById(`step${step + 1}`).classList.add('d-none');
+        updateProgressBar((step + 1) / 3);
+    }
+
+    function prevStep(step) {
+        document.getElementById(`step${step}`).classList.add('d-none');
+        document.getElementById(`step${step - 1}`).classList.remove('d-none');
+        updateProgressBar((step -1) / 3);
+    }
+
+    function updateProgressBar(progress) {
+        const progressBar = document.getElementById('formProgress');
+        progressBar.style.width = `${progress * 100}%`;
     }
 </script>
 {% endblock %}
