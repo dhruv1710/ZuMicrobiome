@@ -30,6 +30,17 @@
                         </div>
                     </div>
 
+                    <!-- Community Comparison -->
+                    {% if insights.community_comparison %}
+                    <div class="insight-section mb-4">
+                        <h3 class="h5 mb-3">👥 Community Insights</h3>
+                        <div class="insight-content">
+                            <p>Your mood today is <strong>{{ insights.community_comparison.mood_comparison }}</strong> compared to the community average of {{ insights.community_comparison.community_avg_mood }}.</p>
+                            <p class="text-muted"><small>Based on data from {{ insights.community_comparison.total_participants }} community members today.</small></p>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Meal Patterns -->
                     <div class="insight-section">
                         <h3 class="h5 mb-3">🍽️ Meal Summary</h3>

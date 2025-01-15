@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 import logging
 from datetime import datetime, timedelta
+from sqlalchemy import func
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -37,7 +38,6 @@ def track():
 
 @app.route('/validate-kit/<kit_id>')
 def validate_kit(kit_id):
-    # Simple validation - check if kit ID exists
     from models import AnonymousUser
     user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
     return jsonify({"valid": user is not None})
@@ -52,7 +52,7 @@ def generate_kit():
 
 @app.route('/insights/<kit_id>')
 def get_insights(kit_id):
-    from models import TrackingEntry
+    from models import TrackingEntry, CommunityStats
     from datetime import datetime, timedelta
 
     # Get date range (last 7 days)
@@ -87,7 +87,8 @@ def get_insights(kit_id):
     insights = {
         'mood_summary': None,
         'stool_health': None,
-        'meal_patterns': None
+        'meal_patterns': None,
+        'community_comparison': None
     }
 
     if latest_entry:
@@ -128,6 +129,24 @@ def get_insights(kit_id):
 
         insights['meal_patterns'] = meal_analysis if meal_analysis else ["No meal data available."]
 
+        # Get community stats for comparison
+        today = datetime.now().date()
+        community_stats = CommunityStats.query.filter_by(date=today).first()
+
+        if community_stats and community_stats.total_participants > 10:  # Only show if enough participants
+            mood_diff = mood_level - community_stats.avg_mood
+            mood_comparison = (
+                "above average" if mood_diff > 0.5 else
+                "below average" if mood_diff < -0.5 else
+                "about average"
+            )
+
+            insights['community_comparison'] = {
+                'mood_comparison': mood_comparison,
+                'community_avg_mood': round(community_stats.avg_mood, 1),
+                'total_participants': community_stats.total_participants
+            }
+
     # Check if this is a new submission
     show_trends = request.args.get('new_submission') == 'true'
 
@@ -140,13 +159,41 @@ def get_insights(kit_id):
 def save_tracking():
     from models import TrackingEntry
     data = request.json
+
+    # Create new tracking entry
     entry = TrackingEntry(
         kit_id=data['kitId'],
         meals=data['meals'],
         stool_type=data.get('stool', {}).get('type'),
-        mood=data['mood']
+        mood=data['mood'],
+        shared_with_community=True  # Default to sharing with community
     )
     db.session.add(entry)
+
+    # Update community stats
+    from models import CommunityStats
+    today = datetime.now().date()
+    stats = CommunityStats.get_or_create_daily(today)
+
+    # Calculate new averages
+    today_entries = TrackingEntry.query.filter(
+        TrackingEntry.date >= today,
+        TrackingEntry.shared_with_community == True
+    ).all()
+
+    if today_entries:
+        # Calculate mood average
+        total_mood = sum(entry.mood for entry in today_entries if entry.mood)
+        stats.avg_mood = total_mood / len(today_entries)
+
+        # Find most common stool type
+        stool_types = [entry.stool_type for entry in today_entries if entry.stool_type]
+        if stool_types:
+            from collections import Counter
+            stats.most_common_stool_type = Counter(stool_types).most_common(1)[0][0]
+
+        stats.total_participants = len(today_entries)
+
     db.session.commit()
     return jsonify({"success": True})
 
