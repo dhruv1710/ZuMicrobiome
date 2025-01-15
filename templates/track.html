@@ -91,15 +91,12 @@
                 <div class="card-body">
                     <h3 class="card-title">Stool Tracking</h3>
                     <div class="stool-types">
-                        <div class="row g-4">
+                        <div class="row g-4 mb-4">
                             {% for i in range(1, 8) %}
                             <div class="col-6 col-md-4">
                                 <div class="stool-type-card">
                                     <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
                                     <label class="btn btn-outline-primary w-100" for="type{{ i }}">
-                                        <div class="color-selector mb-2">
-                                            <input type="color" class="form-control form-control-color" id="color{{ i }}" value="#8B4513">
-                                        </div>
                                         <img src="{{ url_for('static', filename='images/type' + i|string + '.svg') }}"
                                              alt="Type {{ i }}" class="img-fluid mb-2" id="stoolImage{{ i }}">
                                         <span class="d-block">Type {{ i }}</span>
@@ -107,6 +104,18 @@
                                 </div>
                             </div>
                             {% endfor %}
+                        </div>
+                        <div class="stool-color-selector p-4">
+                            <label class="form-label">Select Color</label>
+                            <input type="range" class="form-range" min="0" max="5" step="1" id="colorSlider" value="0">
+                            <div class="color-labels d-flex justify-content-between mt-2">
+                                <span class="color-dot" style="background-color: #8B4513">🟤</span>
+                                <span class="color-dot" style="background-color: #FFD700">🟡</span>
+                                <span class="color-dot" style="background-color: #228B22">🟢</span>
+                                <span class="color-dot" style="background-color: #FF0000">🔴</span>
+                                <span class="color-dot" style="background-color: #FFFFFF">⚪</span>
+                                <span class="color-dot" style="background-color: #000000">⚫</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -147,24 +156,41 @@
 
 {% block scripts %}
 <script>
-    // Handle color picker changes
-    for (let i = 1; i <= 7; i++) {
-        const colorPicker = document.getElementById(`color${i}`);
-        const stoolImage = document.getElementById(`stoolImage${i}`);
+    // Array of preset colors
+    const stoolColors = ['#8B4513', '#FFD700', '#228B22', '#FF0000', '#FFFFFF', '#000000'];
 
-        colorPicker.addEventListener('input', function(e) {
-            // Get the SVG content
-            fetch(stoolImage.src)
+    // Handle color slider changes
+    const colorSlider = document.getElementById('colorSlider');
+    colorSlider.addEventListener('input', function(e) {
+        const selectedColor = stoolColors[e.target.value];
+        const selectedStoolType = document.querySelector('input[name="stoolType"]:checked');
+
+        if (selectedStoolType) {
+            const stoolImage = document.getElementById(`stoolImage${selectedStoolType.value}`);
+
+            // Update the SVG color
+            fetch(stoolImage.getAttribute('src'))
                 .then(response => response.text())
                 .then(svgContent => {
-                    // Replace the fill color in the SVG
-                    const newSvgContent = svgContent.replace(/#8B4513/g, e.target.value);
+                    // Replace all fill colors in the SVG
+                    const newSvgContent = svgContent.replace(/#[0-9A-F]{6}/gi, selectedColor);
                     // Create a blob from the modified SVG
                     const blob = new Blob([newSvgContent], {type: 'image/svg+xml'});
                     // Update the image source
                     stoolImage.src = URL.createObjectURL(blob);
                 });
+        }
+    });
+
+    // Update color slider when stool type is selected
+    document.querySelectorAll('input[name="stoolType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (!colorSlider.value) {
+                colorSlider.value = 0; // Default to brown
+                const event = new Event('input');
+                colorSlider.dispatchEvent(event);
+            }
         });
-    }
+    });
 </script>
 {% endblock %}

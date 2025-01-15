@@ -272,41 +272,32 @@ body {
 }
 
 
-/* Add to the end of the existing CSS file */
+/* Add these styles at the end of the file */
 
-.color-selector {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
-}
-
-.form-control-color {
-    width: 50px;
-    height: 50px;
-    padding: 0;
+.stool-color-selector {
+    background-color: var(--background-color);
     border: var(--border-thickness) solid #000;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform var(--transition-timing);
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 #000;
+    margin-top: 2rem;
 }
 
-.form-control-color:hover {
-    transform: scale(1.1);
-}
-
-.mood-labels {
+.color-labels {
     font-size: 2rem;
     margin-top: 1rem;
     display: flex;
     justify-content: space-between;
 }
 
-.mood-labels span {
+.color-dot {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 2px solid #000;
     cursor: pointer;
     transition: transform var(--transition-timing);
 }
 
-.mood-labels span:hover {
+.color-dot:hover {
     transform: scale(1.2);
 }
 
@@ -327,4 +318,19 @@ body {
 
 .form-range::-webkit-slider-thumb:hover {
     transform: scale(1.1);
+}
+
+.stool-type-card {
+    transition: all var(--transition-timing);
+}
+
+.stool-type-card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: var(--primary-color);
+    border-color: #000;
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 #000;
 }
