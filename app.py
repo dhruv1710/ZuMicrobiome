@@ -37,6 +37,14 @@ def validate_kit(kit_id):
     user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
     return jsonify({"valid": user is not None})
 
+@app.route('/generate-kit', methods=['POST'])
+def generate_kit():
+    from models import AnonymousUser
+    new_user = AnonymousUser(kit_id=AnonymousUser.generate_kit_id())
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"kit_id": new_user.kit_id})
+
 with app.app_context():
     import models
     db.create_all()
