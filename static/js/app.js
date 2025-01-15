@@ -65,10 +65,12 @@ function prevStep(currentStepNum) {
 // New function to toggle category expansion
 function toggleCategory(categoryId) {
     const content = document.getElementById(`${categoryId}-content`);
-    const icon = content.previousElementSibling.querySelector('.category-icon');
+    const icon = document.querySelector(`[onclick="toggleCategory('${categoryId}')"] .category-icon`);
 
-    content.classList.toggle('expanded');
-    icon.classList.toggle('expanded');
+    if (content) {
+        content.classList.toggle('expanded');
+        icon.classList.toggle('expanded');
+    }
 }
 
 // Added mood tracking variables and functions
@@ -97,7 +99,6 @@ function updateMoodChart() {
     moodChart.data.datasets[0].data = data;
     moodChart.update();
 }
-
 
 // Modified saveTracking function to handle hierarchical meal data and mood entries
 function saveTracking() {
