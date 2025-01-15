@@ -21,10 +21,31 @@ function updateProgress() {
 }
 
 function showStep(step) {
-    document.querySelectorAll('.form-step').forEach(el => {
-        el.classList.add('d-none');
-    });
-    document.getElementById(`step${step}`).classList.remove('d-none');
+    const steps = document.querySelectorAll('.form-step');
+    const currentStepElement = document.getElementById(`step${currentStep}`);
+    const nextStepElement = document.getElementById(`step${step}`);
+
+    // First hide the current step with animation
+    if (currentStepElement) {
+        currentStepElement.style.opacity = '0';
+        currentStepElement.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            currentStepElement.classList.add('d-none');
+
+            // Then show the next step with animation
+            nextStepElement.classList.remove('d-none');
+            setTimeout(() => {
+                nextStepElement.style.opacity = '1';
+                nextStepElement.style.transform = 'translateX(0)';
+            }, 50);
+        }, 300);
+    } else {
+        // For the first step
+        nextStepElement.classList.remove('d-none');
+        nextStepElement.style.opacity = '1';
+        nextStepElement.style.transform = 'translateX(0)';
+    }
+
     currentStep = step;
     updateProgress();
 }
