@@ -51,15 +51,16 @@ def track():
 @app.route('/validate-kit/<kit_id>')
 def validate_kit(kit_id):
     from models import AnonymousUser, Admin
-    # Check if it's an admin code
-    admin = Admin.query.filter_by(username=kit_id).first()
-    if admin:
-        session['admin_id'] = admin.id
-        return jsonify({"valid": True, "is_admin": True})
-
-    # Check if it's a regular kit
+    
+    # Check validity silently
     user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
-    return jsonify({"valid": user is not None, "is_admin": False})
+    admin = Admin.query.filter_by(username=kit_id).first()
+    
+    if admin and admin.is_active:
+        session['admin_id'] = admin.id
+        return jsonify({"valid": True})
+    
+    return jsonify({"valid": user is not None})
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
