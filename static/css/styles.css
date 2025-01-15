@@ -1,7 +1,7 @@
 :root {
-    --primary-color: #2D3FE1;  /* Bold blue */
+    --primary-color: #00B4D8;  /* Cyan-blue */
     --secondary-color: #FFD700; /* Bright yellow */
-    --accent-color: #111B76;   /* Darker blue */
+    --accent-color: #0077B6;   /* Darker cyan-blue */
     --background-color: #FFFFFF;
     --text-color: #000000;
     --border-thickness: 3px;
