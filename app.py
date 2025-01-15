@@ -5,6 +5,11 @@ from sqlalchemy.orm import DeclarativeBase
 import logging
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -196,6 +201,44 @@ def save_tracking():
 
     db.session.commit()
     return jsonify({"success": True})
+
+@app.route('/export-data/<kit_id>', methods=['POST'])
+def export_data(kit_id):
+    from models import TrackingEntry
+
+    # Generate a secure key for encryption
+    password = app.secret_key.encode()
+    salt = b'health_tracking_salt'  # In production, this should be randomly generated per user
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=480000,
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    f = Fernet(key)
+
+    # Fetch all user's data
+    entries = TrackingEntry.query.filter_by(kit_id=kit_id).order_by(TrackingEntry.date).all()
+
+    export_data = []
+    for entry in entries:
+        export_data.append({
+            'date': entry.date.isoformat(),
+            'meals': entry.meals,
+            'stool_type': entry.stool_type,
+            'mood': entry.mood
+        })
+
+    # Encrypt the data
+    json_data = json.dumps(export_data)
+    encrypted_data = f.encrypt(json_data.encode())
+
+    return jsonify({
+        'encrypted_data': encrypted_data.decode(),
+        'key': key.decode(),  # In production, this should be securely transmitted
+        'message': 'Data exported successfully'
+    })
 
 with app.app_context():
     import models

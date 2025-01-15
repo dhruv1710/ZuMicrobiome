@@ -71,6 +71,7 @@
 
                     <div class="text-center mt-4">
                         <a href="/track" class="btn btn-primary me-2">Track New Entry</a>
+                        <button onclick="exportData()" class="btn btn-secondary me-2">Export Data</button>
                         <a href="/" class="btn btn-secondary">Back to Home</a>
                     </div>
                 </div>
@@ -160,4 +161,45 @@
     });
 </script>
 {% endif %}
+
+<script>
+async function exportData() {
+    const kitId = localStorage.getItem('kitId');
+    if (!kitId) {
+        alert('Please log in first');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/export-data/${kitId}`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+
+        if (data.encrypted_data) {
+            // Create a Blob with the encrypted data
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+
+            // Create a download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `health_data_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            alert('Data exported successfully! Please keep the encryption key safe.');
+        } else {
+            alert('Failed to export data');
+        }
+    } catch (error) {
+        console.error('Error exporting data:', error);
+        alert('Failed to export data');
+    }
+}
+</script>
 {% endblock %}
