@@ -20,6 +20,7 @@ class TrackingEntry(db.Model):
     stool_type = db.Column(db.String(10))
     mood = db.Column(db.Integer)
     shared_with_community = db.Column(db.Boolean, default=True)
+    shared_with_community = db.Column(db.Boolean, default=True)
 
 class CommunityStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
