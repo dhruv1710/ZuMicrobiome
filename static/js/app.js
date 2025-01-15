@@ -168,3 +168,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+// Initialize charts only if they exist on the page
+document.addEventListener('DOMContentLoaded', function() {
+    const moodChartCanvas = document.getElementById('moodChart');
+    if (moodChartCanvas) {
+        const ctx = moodChartCanvas.getContext('2d');
+        window.moodChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Mood Level',
+                    data: [],
+                    borderColor: '#4CAF50',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 7
+                    }
+                }
+            }
+        });
+    }
+});
