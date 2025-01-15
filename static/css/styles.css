@@ -111,3 +111,56 @@ body {
     padding: 0.75rem;
     box-shadow: var(--shadow-offset) var(--shadow-offset) 0 #000;
 }
+
+.progress {
+    height: 10px;
+    border: var(--border-thickness) solid #000;
+    border-radius: 0;
+    background-color: #fff;
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 #000;
+}
+
+.progress-bar {
+    background-color: var(--secondary-color);
+}
+
+.form-step {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.stool-type-card {
+    margin-bottom: 1rem;
+}
+
+.stool-type-card .btn-check {
+    position: absolute;
+    clip: rect(0,0,0,0);
+}
+
+.stool-type-card .btn-outline-primary {
+    background-color: #fff;
+    border: var(--border-thickness) solid #000;
+    padding: 1rem;
+    transition: all 0.2s;
+}
+
+.stool-type-card .btn-check:checked + .btn-outline-primary {
+    background-color: var(--secondary-color);
+    border-color: #000;
+    transform: translate(-2px, -2px);
+    box-shadow: calc(var(--shadow-offset) + 2px) calc(var(--shadow-offset) + 2px) 0 #000;
+}
+
+.stool-type-card img {
+    width: 100%;
+    height: auto;
+    margin-bottom: 0.5rem;
+}
+
+.d-none {
+    display: none !important;
+}
+
+.form-control {
+    resize: none;
+}

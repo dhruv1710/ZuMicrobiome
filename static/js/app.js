@@ -11,110 +11,33 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Voice recognition setup
-let recognition = null;
-if ('webkitSpeechRecognition' in window) {
-    recognition = new webkitSpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-} else {
-    console.log('Speech recognition not supported');
+// Form navigation functions
+let currentStep = 1;
+const totalSteps = 3;
+
+function updateProgress() {
+    const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    document.getElementById('formProgress').style.width = `${progress}%`;
 }
 
-// Voice recording state
-let isRecording = false;
-let currentMode = null;
-
-// Start voice recording
-function startVoiceRecording(mode) {
-    if (!recognition) {
-        alert('Speech recognition is not supported in your browser');
-        return;
-    }
-
-    if (isRecording) {
-        stopVoiceRecording();
-        return;
-    }
-
-    currentMode = mode;
-    const outputDiv = document.getElementById(`${mode}VoiceOutput`);
-    const button = document.getElementById(`${mode}VoiceBtn`);
-
-    outputDiv.classList.remove('d-none');
-    button.classList.add('btn-danger');
-    button.innerHTML = '<i data-feather="mic-off"></i> Stop Recording';
-    feather.replace();
-
-    recognition.onresult = handleVoiceResult;
-    recognition.onend = () => stopVoiceRecording();
-
-    recognition.start();
-    isRecording = true;
+function showStep(step) {
+    document.querySelectorAll('.form-step').forEach(el => {
+        el.classList.add('d-none');
+    });
+    document.getElementById(`step${step}`).classList.remove('d-none');
+    currentStep = step;
+    updateProgress();
 }
 
-// Stop voice recording
-function stopVoiceRecording() {
-    if (!currentMode) return;
-
-    const outputDiv = document.getElementById(`${currentMode}VoiceOutput`);
-    const button = document.getElementById(`${currentMode}VoiceBtn`);
-
-    outputDiv.classList.add('d-none');
-    button.classList.remove('btn-danger');
-    button.innerHTML = '<i data-feather="mic"></i> Record ' + currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
-    feather.replace();
-
-    recognition.stop();
-    isRecording = false;
-}
-
-// Handle voice recognition results
-function handleVoiceResult(event) {
-    const result = event.results[0][0].transcript.toLowerCase();
-    console.log('Voice Input:', result);
-
-    if (currentMode === 'meal') {
-        handleMealVoiceCommand(result);
-    } else if (currentMode === 'mood') {
-        handleMoodVoiceCommand(result);
+function nextStep(currentStepNum) {
+    if (currentStepNum < totalSteps) {
+        showStep(currentStepNum + 1);
     }
 }
 
-// Process meal-related voice commands
-function handleMealVoiceCommand(command) {
-    const mealVoiceOutput = document.getElementById('mealVoiceOutput');
-    mealVoiceOutput.innerHTML = `<p class="mb-0">Recognized: "${command}"</p>`;
-
-    // Check for meal types
-    if (command.includes('breakfast')) {
-        document.getElementById('breakfast1').checked = true;
-    }
-    // Add more meal recognition logic here
-}
-
-// Process mood-related voice commands
-function handleMoodVoiceCommand(command) {
-    const moodVoiceOutput = document.getElementById('moodVoiceOutput');
-    moodVoiceOutput.innerHTML = `<p class="mb-0">Recognized: "${command}"</p>`;
-
-    // Map mood keywords to values
-    const moodMap = {
-        'terrible': 1,
-        'bad': 2,
-        'okay': 3,
-        'good': 4,
-        'great': 5,
-        'amazing': 5
-    };
-
-    // Set mood value based on recognized keywords
-    for (const [keyword, value] of Object.entries(moodMap)) {
-        if (command.includes(keyword)) {
-            document.getElementById('moodRange').value = value;
-            break;
-        }
+function prevStep(currentStepNum) {
+    if (currentStepNum > 1) {
+        showStep(currentStepNum - 1);
     }
 }
 
@@ -145,13 +68,12 @@ function saveTracking() {
         date: new Date().toISOString(),
         kitId: localStorage.getItem('kitId'),
         meals: {
-            breakfast: document.getElementById('breakfast1').checked,
-            // Add other meal tracking
+            breakfast: document.querySelector('[placeholder="What did you eat for breakfast?"]').value,
+            lunch: document.querySelector('[placeholder="What did you eat for lunch?"]').value,
+            dinner: document.querySelector('[placeholder="What did you eat for dinner?"]').value
         },
         stool: {
-            shape: document.getElementById('stoolShape').value,
-            color: document.getElementById('stoolColor').value,
-            // Add other stool characteristics
+            type: document.querySelector('input[name="stoolType"]:checked')?.value
         },
         mood: document.getElementById('moodRange').value
     };
@@ -162,4 +84,12 @@ function saveTracking() {
     localStorage.setItem('healthData', JSON.stringify(existingData));
 
     alert('Data saved successfully!');
+    window.location.href = '/';
 }
+
+// Initialize progress bar when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('formProgress')) {
+        updateProgress();
+    }
+});
