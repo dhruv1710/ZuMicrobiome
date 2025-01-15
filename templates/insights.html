@@ -7,13 +7,13 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <h2 class="card-title text-center mb-4">Daily Wellness Insights</h2>
-                    
+
                     {% if not has_data %}
                     <div class="alert alert-info">
                         <p class="mb-0">No tracking data available for today. Start tracking your health to receive personalized insights!</p>
                     </div>
                     {% else %}
-                    
+
                     <!-- Mood Summary -->
                     <div class="insight-section mb-4">
                         <h3 class="h5 mb-3">🎭 Mood Check</h3>
@@ -45,6 +45,17 @@
                             {% endif %}
                         </div>
                     </div>
+
+                    <!-- Health Trends (only shown after new submission) -->
+                    {% if trend_data %}
+                    <div class="insight-section mt-4">
+                        <h3 class="h5 mb-3">📈 Weekly Health Trends</h3>
+                        <div class="insight-content">
+                            <canvas id="moodTrend" class="mb-4"></canvas>
+                            <canvas id="stoolTrend"></canvas>
+                        </div>
+                    </div>
+                    {% endif %}
                     {% endif %}
 
                     <div class="text-center mt-4">
@@ -56,4 +67,86 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if trend_data %}
+<script>
+    // Mood trend chart
+    const moodCtx = document.getElementById('moodTrend').getContext('2d');
+    new Chart(moodCtx, {
+        type: 'line',
+        data: {
+            labels: {{ trend_data.dates|tojson }},
+            datasets: [{
+                label: 'Mood Level',
+                data: {{ trend_data.moods|tojson }},
+                borderColor: '#00B4D8',
+                backgroundColor: 'rgba(0, 180, 216, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 7,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            const labels = ['😢', '😞', '😕', '😐', '🙂', '😊', '😄'];
+                            return labels[value - 1] || value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Weekly Mood Pattern'
+                }
+            }
+        }
+    });
+
+    // Stool trend chart
+    const stoolCtx = document.getElementById('stoolTrend').getContext('2d');
+    new Chart(stoolCtx, {
+        type: 'line',
+        data: {
+            labels: {{ trend_data.dates|tojson }},
+            datasets: [{
+                label: 'Stool Type',
+                data: {{ trend_data.stool_types|tojson }},
+                borderColor: '#8B4513',
+                backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 7,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Weekly Stool Pattern'
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}

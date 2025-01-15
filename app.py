@@ -53,69 +53,88 @@ def generate_kit():
 @app.route('/insights/<kit_id>')
 def get_insights(kit_id):
     from models import TrackingEntry
+    from datetime import datetime, timedelta
 
-    # Get today's date range
-    today = datetime.now().date()
-    tomorrow = today + timedelta(days=1)
+    # Get date range (last 7 days)
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=7)
 
-    # Fetch today's entries
+    # Fetch entries for the last 7 days
     entries = TrackingEntry.query.filter(
         TrackingEntry.kit_id == kit_id,
-        TrackingEntry.date >= today,
-        TrackingEntry.date < tomorrow
-    ).all()
+        TrackingEntry.date >= start_date,
+        TrackingEntry.date <= end_date
+    ).order_by(TrackingEntry.date).all()
 
     if not entries:
         return render_template('insights.html', has_data=False)
 
-    # Analyze the entries
+    # Prepare trend data
+    trend_data = {
+        'dates': [],
+        'moods': [],
+        'stool_types': []
+    }
+
+    for entry in entries:
+        trend_data['dates'].append(entry.date.strftime('%Y-%m-%d'))
+        trend_data['moods'].append(entry.mood)
+        trend_data['stool_types'].append(int(entry.stool_type) if entry.stool_type else 0)
+
+    # Get today's latest entry for detailed insights
+    latest_entry = entries[-1] if entries else None
+
     insights = {
         'mood_summary': None,
         'stool_health': None,
         'meal_patterns': None
     }
 
-    # Get the latest entry
-    latest_entry = entries[-1]
+    if latest_entry:
+        # Mood analysis
+        mood_level = latest_entry.mood
+        mood_insights = {
+            1: "You're having a tough day. Remember, it's okay to not be okay.",
+            2: "Your mood is low. Consider some self-care activities.",
+            3: "You're feeling a bit down. Try to do something you enjoy.",
+            4: "You're feeling balanced today.",
+            5: "You're having a good day! Keep up the positive energy.",
+            6: "You're feeling great! What a wonderful day.",
+            7: "You're feeling amazing! Remember this feeling!"
+        }
+        insights['mood_summary'] = mood_insights.get(mood_level, "No mood data available.")
 
-    # Mood analysis
-    mood_level = latest_entry.mood
-    mood_insights = {
-        1: "You're having a tough day. Remember, it's okay to not be okay.",
-        2: "Your mood is low. Consider some self-care activities.",
-        3: "You're feeling a bit down. Try to do something you enjoy.",
-        4: "You're feeling balanced today.",
-        5: "You're having a good day! Keep up the positive energy.",
-        6: "You're feeling great! What a wonderful day.",
-        7: "You're feeling amazing! Remember this feeling!"
-    }
-    insights['mood_summary'] = mood_insights.get(mood_level, "No mood data available.")
+        # Stool health analysis
+        stool_type = latest_entry.stool_type
+        stool_insights = {
+            '1': "Your stool is very hard and separate, indicating possible dehydration.",
+            '2': "Your stool is firm but segmented, suggesting good but could be better hydration.",
+            '3': "Your stool is well-formed - this is ideal!",
+            '4': "Your stool is soft but still well-formed.",
+            '5': "Your stool is soft with clear edges - consider more fiber.",
+            '6': "Your stool is mushy - consider adjusting your diet.",
+            '7': "Your stool is liquid - stay hydrated and monitor your diet."
+        }
+        insights['stool_health'] = stool_insights.get(stool_type, "No stool data available.")
 
-    # Stool health analysis
-    stool_type = latest_entry.stool_type
-    stool_insights = {
-        '1': "Your stool is very hard and separate, indicating possible dehydration.",
-        '2': "Your stool is firm but segmented, suggesting good but could be better hydration.",
-        '3': "Your stool is well-formed - this is ideal!",
-        '4': "Your stool is soft but still well-formed.",
-        '5': "Your stool is soft with clear edges - consider more fiber.",
-        '6': "Your stool is mushy - consider adjusting your diet.",
-        '7': "Your stool is liquid - stay hydrated and monitor your diet."
-    }
-    insights['stool_health'] = stool_insights.get(stool_type, "No stool data available.")
+        # Meal pattern analysis
+        meals = latest_entry.meals
+        meal_analysis = []
 
-    # Meal pattern analysis
-    meals = latest_entry.meals
-    meal_analysis = []
+        if meals:
+            for meal_type, foods in meals.items():
+                if foods:
+                    meal_analysis.append(f"{meal_type.title()}: {', '.join(foods.keys())}")
 
-    if meals:
-        for meal_type, foods in meals.items():
-            if foods:
-                meal_analysis.append(f"{meal_type.title()}: {', '.join(foods.keys())}")
+        insights['meal_patterns'] = meal_analysis if meal_analysis else ["No meal data available."]
 
-    insights['meal_patterns'] = meal_analysis if meal_analysis else ["No meal data available."]
+    # Check if this is a new submission
+    show_trends = request.args.get('new_submission') == 'true'
 
-    return render_template('insights.html', insights=insights, has_data=True)
+    return render_template('insights.html', 
+                         insights=insights, 
+                         has_data=bool(latest_entry),
+                         trend_data=trend_data if show_trends else None)
 
 @app.route('/save-tracking', methods=['POST'])
 def save_tracking():

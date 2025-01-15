@@ -118,8 +118,8 @@ function saveTracking() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Redirect to insights page instead of home
-            window.location.href = `/insights/${trackingData.kitId}`;
+            // Redirect to insights page with new_submission parameter
+            window.location.href = `/insights/${trackingData.kitId}?new_submission=true`;
         } else {
             alert('Failed to save data');
         }
