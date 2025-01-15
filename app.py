@@ -14,7 +14,11 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "health_tracking_secret_key"
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///health_tracker.db")
+# Get the DATABASE_URL from environment and fix potential "postgres://" issue
+db_url = os.environ.get("DATABASE_URL")
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -48,3 +52,12 @@ def generate_kit():
 with app.app_context():
     import models
     db.create_all()
+
+    # Create a test kit ID if it doesn't exist
+    from models import AnonymousUser
+    test_kit = AnonymousUser.query.filter_by(kit_id='TEST123456').first()
+    if not test_kit:
+        test_kit = AnonymousUser(kit_id='TEST123456')
+        db.session.add(test_kit)
+        db.session.commit()
+        logging.info("Created test kit ID: TEST123456")
