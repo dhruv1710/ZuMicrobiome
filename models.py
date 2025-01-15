@@ -11,6 +11,22 @@ class AnonymousUser(db.Model):
     def generate_kit_id():
         return str(uuid.uuid4())
 
+class Admin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+class KitCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(36), unique=True, nullable=False)
+    batch_name = db.Column(db.String(100), nullable=False)
+    menu_data = db.Column(db.JSON)
+    created_by = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    is_active = db.Column(db.Boolean, default=True)
+
 class TrackingEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     kit_id = db.Column(db.String(36), nullable=False)

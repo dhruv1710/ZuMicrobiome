@@ -7,11 +7,10 @@
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Welcome to Health Tracker</h2>
                 <div id="kit-input" class="mb-4">
-                    <label for="kitId" class="form-label">Enter your Kit ID</label>
-                    <input type="text" class="form-control" id="kitId" placeholder="Enter your unique kit ID">
+                    <label for="kitId" class="form-label">Enter your Kit ID or Admin Code</label>
+                    <input type="text" class="form-control" id="kitId" placeholder="Enter your unique kit ID or admin code">
                     <div class="d-grid gap-2 mt-3">
                         <button class="btn btn-primary" onclick="validateKitId()">Start Tracking</button>
-                        <a href="#" class="btn btn-secondary" onclick="viewInsights()">View Daily Insights</a>
                     </div>
                 </div>
             </div>
@@ -22,13 +21,28 @@
 
 {% block scripts %}
 <script>
-    function viewInsights() {
-        const kitId = localStorage.getItem('kitId');
+    function validateKitId() {
+        const kitId = document.getElementById('kitId').value;
+
         if (!kitId) {
-            alert('Please enter your Kit ID first');
+            alert('Please enter a Kit ID or Admin Code');
             return;
         }
-        window.location.href = `/insights/${kitId}`;
+
+        fetch(`/validate-kit/${kitId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    if (data.is_admin) {
+                        window.location.href = '/admin/dashboard';
+                    } else {
+                        localStorage.setItem('kitId', kitId);
+                        window.location.href = '/track';
+                    }
+                } else {
+                    alert('Invalid Kit ID or Admin Code');
+                }
+            });
     }
 </script>
 {% endblock %}

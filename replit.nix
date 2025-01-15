@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.glibcLocales
     pkgs.rustc
     pkgs.pkg-config
     pkgs.libxcrypt

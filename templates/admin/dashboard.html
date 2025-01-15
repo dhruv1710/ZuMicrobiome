@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Admin Dashboard</h2>
+        </div>
+        <div class="col text-end">
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">Logout</a>
+        </div>
+    </div>
+
+    <!-- Kit Code Generation -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Generate New Kit Codes</h3>
+            <form method="POST" action="{{ url_for('generate_kit_codes') }}">
+                <div class="mb-3">
+                    <label for="batch_name" class="form-label">Batch Name</label>
+                    <input type="text" class="form-control" id="batch_name" name="batch_name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Number of Codes</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" max="100" value="10">
+                </div>
+                <div class="mb-3">
+                    <label for="menu_data" class="form-label">Menu Data (JSON)</label>
+                    <textarea class="form-control" id="menu_data" name="menu_data" rows="5"></textarea>
+                    <small class="text-muted">Enter the menu options in JSON format</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Generate Codes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Kit Codes List -->
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">Generated Kit Codes</h3>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Batch Name</th>
+                            <th>Created At</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for code in kit_codes %}
+                        <tr>
+                            <td>{{ code.code }}</td>
+                            <td>{{ code.batch_name }}</td>
+                            <td>{{ code.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <span class="badge {% if code.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if code.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('toggle_kit_code', code_id=code.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-warning">
+                                        {{ 'Deactivate' if code.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

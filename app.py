@@ -1,14 +1,11 @@
 import os
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 import logging
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import base64
+from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
 # Configure logging
@@ -33,6 +30,16 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 db.init_app(app)
 
+# Admin authentication decorator
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -43,9 +50,79 @@ def track():
 
 @app.route('/validate-kit/<kit_id>')
 def validate_kit(kit_id):
-    from models import AnonymousUser
+    from models import AnonymousUser, Admin
+    # Check if it's an admin code
+    admin = Admin.query.filter_by(username=kit_id).first()
+    if admin:
+        session['admin_id'] = admin.id
+        return jsonify({"valid": True, "is_admin": True})
+
+    # Check if it's a regular kit
     user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
-    return jsonify({"valid": user is not None})
+    return jsonify({"valid": user is not None, "is_admin": False})
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        from models import Admin
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        admin = Admin.query.filter_by(username=username).first()
+        if admin and check_password_hash(admin.password_hash, password):
+            session['admin_id'] = admin.id
+            return redirect(url_for('admin_dashboard'))
+
+        flash('Invalid credentials', 'error')
+    return render_template('admin/login.html')
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_id', None)
+    return redirect(url_for('index'))
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    from models import KitCode
+    kit_codes = KitCode.query.order_by(KitCode.created_at.desc()).all()
+    return render_template('admin/dashboard.html', kit_codes=kit_codes)
+
+@app.route('/admin/generate-codes', methods=['POST'])
+@admin_required
+def generate_kit_codes():
+    from models import KitCode, AnonymousUser
+    batch_name = request.form.get('batch_name')
+    quantity = int(request.form.get('quantity', 10))
+    menu_data = request.form.get('menu_data')
+
+    try:
+        menu_json = json.loads(menu_data) if menu_data else {}
+    except json.JSONDecodeError:
+        flash('Invalid JSON format for menu data', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    for _ in range(quantity):
+        kit_code = KitCode(
+            code=AnonymousUser.generate_kit_id(),
+            batch_name=batch_name,
+            menu_data=menu_json,
+            created_by=session['admin_id']
+        )
+        db.session.add(kit_code)
+
+    db.session.commit()
+    flash(f'Successfully generated {quantity} new kit codes', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/toggle-code/<int:code_id>', methods=['POST'])
+@admin_required
+def toggle_kit_code(code_id):
+    from models import KitCode
+    kit_code = KitCode.query.get_or_404(code_id)
+    kit_code.is_active = not kit_code.is_active
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/generate-kit', methods=['POST'])
 def generate_kit():
@@ -243,6 +320,18 @@ def export_data(kit_id):
 with app.app_context():
     import models
     db.create_all()
+
+    # Create a default admin account if it doesn't exist
+    from models import Admin
+    admin = Admin.query.filter_by(username='admin').first()
+    if not admin:
+        admin = Admin(
+            username='admin',
+            password_hash=generate_password_hash('admin123')
+        )
+        db.session.add(admin)
+        db.session.commit()
+        logging.info("Created default admin account: username='admin', password='admin123'")
 
     # Create a test kit ID if it doesn't exist
     from models import AnonymousUser
