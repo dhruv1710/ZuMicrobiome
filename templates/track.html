@@ -120,11 +120,24 @@
                 <div class="card-body">
                     <h3 class="card-title">Daily Mood</h3>
                     <div class="mood-tracker">
-                        <input type="range" class="form-range" min="1" max="5" id="moodRange">
-                        <div class="mood-labels d-flex justify-content-between">
-                            <span>😢</span>
-                            <span>😐</span>
-                            <span>😊</span>
+                        <canvas id="moodChart"></canvas>
+                        <div class="mood-input mt-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <input type="time" class="form-control" id="moodTime" value="12:00">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="range" class="form-range" min="1" max="5" id="moodRange" value="3">
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-primary" onclick="addMoodEntry()">Add Entry</button>
+                                </div>
+                            </div>
+                            <div class="mood-labels d-flex justify-content-between mt-2">
+                                <span>😢</span>
+                                <span>😐</span>
+                                <span>😊</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -141,5 +154,70 @@
 {% block scripts %}
 <script>
     feather.replace();
+
+    // Initialize mood chart
+    const ctx = document.getElementById('moodChart').getContext('2d');
+    const moodChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Mood',
+                data: [],
+                borderColor: '#FFD700',
+                tension: 0.4,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    min: 1,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return ['😢', '😞', '😐', '🙂', '😊'][value-1];
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    function addMoodEntry() {
+        const time = document.getElementById('moodTime').value;
+        const mood = document.getElementById('moodRange').value;
+        moodChart.data.labels.push(time);
+        moodChart.data.datasets[0].data.push(mood);
+        moodChart.update();
+    }
+
+    function saveTracking() {
+        const moodEntries = [];
+        const moodData = {
+            time: [],
+            mood: []
+        };
+        for (let i = 0; i < moodChart.data.labels.length; i++) {
+            moodData.time.push(moodChart.data.labels[i]);
+            moodData.mood.push(moodChart.data.datasets[0].data[i]);
+        }
+        moodEntries.push(moodData);
+
+        //Existing saveTracking logic here,  modified to handle multiple mood entries.
+        //Existing code to save other tracking data
+
+        console.log("Saving tracking data:", moodEntries);
+        // Send data to server using AJAX or Fetch API
+    }
+
+
 </script>
 {% endblock %}
