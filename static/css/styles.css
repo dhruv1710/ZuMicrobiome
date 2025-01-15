@@ -1,0 +1,48 @@
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #81C784;
+    --accent-color: #2E7D32;
+    --background-color: #F5F5F5;
+    --text-color: #333333;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar {
+    background-color: white !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.tracking-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.mood-tracker {
+    padding: 20px 0;
+}
+
+.mood-labels {
+    font-size: 1.5rem;
+    margin-top: 10px;
+}

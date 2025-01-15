@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tracking-container">
+    <h2 class="mb-4">Daily Health Tracking</h2>
+    
+    <!-- Meal Tracking -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Meals</h3>
+            <div class="meal-tracking">
+                <div class="meal-section">
+                    <h4>Breakfast</h4>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="breakfast1">
+                        <label class="form-check-label" for="breakfast1">Oatmeal with fruits</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="breakfast2">
+                        <label class="form-check-label" for="breakfast2">Yogurt and granola</label>
+                    </div>
+                </div>
+                <!-- Similar sections for lunch and dinner -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Stool Tracking -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Stool Tracking</h3>
+            <div class="mb-3">
+                <label class="form-label">Shape Type</label>
+                <select class="form-select" id="stoolShape">
+                    <option value="">Select shape...</option>
+                    <!-- Options 1-7 -->
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Color</label>
+                <select class="form-select" id="stoolColor">
+                    <option value="">Select color...</option>
+                    <!-- 10 color options -->
+                </select>
+            </div>
+            <!-- Other stool characteristics -->
+        </div>
+    </div>
+
+    <!-- Mood Tracking -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Daily Mood</h3>
+            <div class="mood-tracker">
+                <input type="range" class="form-range" min="1" max="5" id="moodRange">
+                <div class="mood-labels d-flex justify-content-between">
+                    <span>😢</span>
+                    <span>😐</span>
+                    <span>😊</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-primary w-100" onclick="saveTracking()">Save Today's Entry</button>
+</div>
+{% endblock %}
