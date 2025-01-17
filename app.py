@@ -7,6 +7,19 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
+import random
+
+# List of capital cities for username generation
+CAPITAL_CITIES = [
+    "Tokyo", "Paris", "London", "Berlin", "Rome", "Madrid", "Moscow", "Cairo",
+    "Bangkok", "Seoul", "Beijing", "Delhi", "Sydney", "Toronto", "Lima",
+    "Vienna", "Prague", "Athens", "Oslo", "Dublin", "Amsterdam", "Brussels",
+    "Copenhagen", "Helsinki", "Stockholm", "Warsaw", "Budapest", "Lisbon"
+]
+
+def generate_microbial_username():
+    """Generate a unique username using a capital city name"""
+    return random.choice(CAPITAL_CITIES)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -30,7 +43,6 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 db.init_app(app)
 
-# Admin authentication decorator
 def admin_required(f):
     from functools import wraps
     @wraps(f)
@@ -42,10 +54,27 @@ def admin_required(f):
 
 @app.route('/')
 def index():
+    if 'kit_id' in session:
+        # Check if user has tracked today
+        from models import TrackingEntry
+        today = datetime.now().date()
+        entry = TrackingEntry.query.filter_by(
+            kit_id=session['kit_id'],
+            date=today
+        ).first()
+
+        if entry:
+            # If already tracked today, show insights
+            return redirect(url_for('get_insights', kit_id=session['kit_id']))
+        else:
+            # If not tracked today, show tracking page
+            return redirect(url_for('track'))
     return render_template('index.html')
 
 @app.route('/track')
 def track():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
     return render_template('track.html')
 
 @app.route('/get-menu/<kit_id>')
@@ -94,8 +123,21 @@ def validate_kit(kit_id):
         username = generate_microbial_username()
         user.name = username
         db.session.commit()
+        session['kit_id'] = kit_id
+        session['username'] = username
         logging.debug(f"Generated username for kit ID {kit_id}: {username}")
-        return jsonify({"valid": is_valid, "is_admin": False, "username": username})
+
+        # Check if user has tracked today
+        from models import TrackingEntry
+        today = datetime.now().date()
+        entry = TrackingEntry.query.filter_by(kit_id=kit_id, date=today).first()
+
+        return jsonify({
+            "valid": is_valid,
+            "is_admin": False,
+            "username": username,
+            "has_tracked": entry is not None
+        })
 
     return jsonify({"valid": is_valid, "is_admin": False})
 

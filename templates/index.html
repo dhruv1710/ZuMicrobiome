@@ -26,9 +26,39 @@
 
 {% block scripts %}
 <script>
+    // Check if user is already logged in
+    document.addEventListener('DOMContentLoaded', function() {
+        const kitId = localStorage.getItem('kitId');
+        const username = localStorage.getItem('userName');
+
+        if (kitId && username) {
+            // Auto-login and redirect
+            validateStoredCredentials(kitId);
+        }
+    });
+
+    function validateStoredCredentials(kitId) {
+        fetch(`/validate-kit/${kitId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                handleSuccessfulValidation(data, kitId);
+            } else {
+                // Clear invalid stored credentials
+                localStorage.removeItem('kitId');
+                localStorage.removeItem('userName');
+            }
+        });
+    }
+
     function validateKitId() {
         const kitId = document.getElementById('kitId').value;
-        
+
         if (!kitId) {
             alert('Please enter a Kit ID');
             return;
@@ -38,23 +68,29 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({})
+            }
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.valid) {
-                    if (data.is_admin) {
-                        window.location.href = '/admin/dashboard';
-                    } else {
-                        localStorage.setItem('kitId', kitId);
-                        localStorage.setItem('userName', userName);
-                        window.location.href = '/track';
-                    }
+        .then(response => response.json())
+        .then(data => handleSuccessfulValidation(data, kitId));
+    }
+
+    function handleSuccessfulValidation(data, kitId) {
+        if (data.valid) {
+            if (data.is_admin) {
+                window.location.href = '/admin/dashboard';
+            } else {
+                localStorage.setItem('kitId', kitId);
+                localStorage.setItem('userName', data.username);
+
+                if (data.has_tracked) {
+                    window.location.href = `/insights/${kitId}`;
                 } else {
-                    alert('Invalid Kit ID or Admin Code');
+                    window.location.href = '/track';
                 }
-            });
+            }
+        } else {
+            alert('Invalid Kit ID');
+        }
     }
 </script>
 {% endblock %}
