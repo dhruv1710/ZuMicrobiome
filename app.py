@@ -90,17 +90,23 @@ def get_menu(kit_id):
 def get_menu_data():
     kit_id = request.args.get('kitId')
     if not kit_id:
+        logging.debug("No kit ID provided in get-menu-data request")
         return jsonify({"error": "No kit ID provided"}), 400
 
     from models import KitCode
+    logging.debug(f"Fetching menu data for kit ID: {kit_id}")
     kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()
-    if kit_code:
+
+    if kit_code and kit_code.menu_data:
+        logging.debug(f"Found menu data for kit ID {kit_id}: {kit_code.menu_data}")
         return jsonify({"menu_data": kit_code.menu_data})
-    return jsonify({"error": "Invalid kit ID"}), 404
+
+    logging.debug(f"No menu data found for kit ID: {kit_id}")
+    return jsonify({"error": "Invalid kit ID or no menu data available"}), 404
 
 @app.route('/validate-kit/<kit_id>', methods=['POST'])
 def validate_kit(kit_id):
-    from models import AnonymousUser, Admin, KitCode
+    from models import AnonymousUser, Admin, KitCode, TrackingEntry
     logging.debug(f"Validating kit ID: {kit_id}")
 
     # Check if it's an admin code
@@ -128,15 +134,21 @@ def validate_kit(kit_id):
         logging.debug(f"Generated username for kit ID {kit_id}: {username}")
 
         # Check if user has tracked today
-        from models import TrackingEntry
         today = datetime.now().date()
         entry = TrackingEntry.query.filter_by(kit_id=kit_id, date=today).first()
+
+        # If no entry for today, check if there's any previous entry
+        last_entry = None
+        if not entry:
+            last_entry = TrackingEntry.query.filter_by(kit_id=kit_id).order_by(TrackingEntry.date.desc()).first()
 
         return jsonify({
             "valid": is_valid,
             "is_admin": False,
             "username": username,
-            "has_tracked": entry is not None
+            "has_tracked": entry is not None,
+            "has_previous_entries": last_entry is not None,
+            "last_entry_date": last_entry.date.strftime('%Y-%m-%d') if last_entry else None
         })
 
     return jsonify({"valid": is_valid, "is_admin": False})

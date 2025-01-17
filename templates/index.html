@@ -83,8 +83,13 @@
                 localStorage.setItem('userName', data.username);
 
                 if (data.has_tracked) {
+                    // If already tracked today, go to insights
+                    window.location.href = `/insights/${kitId}`;
+                } else if (data.has_previous_entries) {
+                    // If has previous entries but not tracked today, show last insights first
                     window.location.href = `/insights/${kitId}`;
                 } else {
+                    // First-time user, go to tracking
                     window.location.href = '/track';
                 }
             }

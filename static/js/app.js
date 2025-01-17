@@ -62,19 +62,8 @@ function prevStep(currentStepNum) {
     }
 }
 
-// Modified function to toggle category expansion
-function toggleCategory(categoryId) {
-    const content = document.getElementById(`${categoryId}-content`);
-    const icon = document.querySelector(`[onclick="toggleCategory('${categoryId}')"] .category-icon`);
-
-    if (content) {
-        content.classList.toggle('expanded');
-        if (icon) {
-            icon.classList.toggle('expanded');
-        }
-    }
-}
-
+// Array of preset colors (remove duplicate declaration)
+const stoolColors = ['#8B4513', '#FFD700', '#228B22', '#FF0000', '#FFFFFF', '#000000'];
 
 // Modified loadMenuData function for proper menu rendering
 async function loadMenuData() {
@@ -83,6 +72,8 @@ async function loadMenuData() {
         try {
             const response = await fetch(`/get-menu-data?kitId=${kitId}`);
             const data = await response.json();
+
+            console.log("Menu Data Response:", data); // Debug log
 
             if (data.menu_data) {
                 const menuData = data.menu_data;
@@ -96,38 +87,35 @@ async function loadMenuData() {
                         // Create categories
                         Object.entries(categories).forEach(([category, items]) => {
                             const categoryDiv = document.createElement('div');
-                            categoryDiv.className = 'subcategory mb-3';
+                            categoryDiv.className = 'meal-category mb-3';
 
-                            // Category header
-                            categoryDiv.innerHTML = `
+                            const categoryContent = `
                                 <div class="category-header" onclick="toggleCategory('${mealType}-${category}')">
-                                    <i data-feather="chevron-right" class="category-icon"></i> 
-                                    ${category}
+                                    <h5>
+                                        <i data-feather="chevron-right" class="category-icon"></i>
+                                        ${category.charAt(0).toUpperCase() + category.slice(1)}
+                                    </h5>
                                 </div>
                                 <div class="category-content" id="${mealType}-${category}-content">
+                                    ${Object.keys(items).map(item => `
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                id="${mealType}-${category}-${item}"
+                                                name="${mealType}-${category}-${item}">
+                                            <label class="form-check-label" 
+                                                for="${mealType}-${category}-${item}">
+                                                ${item}
+                                            </label>
+                                        </div>
+                                    `).join('')}
                                 </div>
                             `;
 
+                            categoryDiv.innerHTML = categoryContent;
                             mealSection.appendChild(categoryDiv);
-
-                            // Add items to category
-                            const categoryContent = document.getElementById(`${mealType}-${category}-content`);
-                            Object.keys(items).forEach(item => {
-                                const itemDiv = document.createElement('div');
-                                itemDiv.className = 'form-check';
-                                itemDiv.innerHTML = `
-                                    <input class="form-check-input" type="checkbox" 
-                                        id="${mealType}-${category}-${item}">
-                                    <label class="form-check-label" 
-                                        for="${mealType}-${category}-${item}">
-                                        ${item}
-                                    </label>
-                                `;
-                                categoryContent.appendChild(itemDiv);
-                            });
                         });
 
-                        // Replace Feather icons in the newly added content
+                        // Initialize Feather icons
                         feather.replace();
                     }
                 };
@@ -138,10 +126,25 @@ async function loadMenuData() {
                         createMenuItems(mealType, menuData[mealType]);
                     }
                 });
+            } else {
+                console.error('No menu data available:', data.error);
             }
         } catch (error) {
             console.error('Error loading menu data:', error);
         }
+    } else {
+        console.error('No kit ID found in localStorage');
+    }
+}
+
+// Handle category expansion
+function toggleCategory(categoryId) {
+    const content = document.getElementById(`${categoryId}-content`);
+    const icon = document.querySelector(`[onclick="toggleCategory('${categoryId}')"] .category-icon`);
+
+    if (content && icon) {
+        content.classList.toggle('expanded');
+        icon.classList.toggle('rotated');
     }
 }
 
@@ -152,9 +155,9 @@ function saveTracking() {
         const mealSection = document.getElementById(`${mealType}-content`);
         if (mealSection) {
             // Get all categories in this meal section
-            const categories = mealSection.getElementsByClassName('subcategory');
+            const categories = mealSection.getElementsByClassName('meal-category');
             Array.from(categories).forEach(category => {
-                const categoryName = category.querySelector('.category-header').textContent.trim();
+                const categoryName = category.querySelector('.category-header h5').textContent.trim();
                 foods[categoryName] = [];
 
                 // Get checked items in this category
@@ -235,22 +238,16 @@ function validateKitId() {
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('formProgress')) {
-        updateProgress();
-    }
+    // Load menu data
+    loadMenuData();
 
     // Replace Feather icons
     feather.replace();
 
-    // Load menu data
-    loadMenuData();
-
-    // Expand first category by default in each step
-    document.querySelectorAll('.category-header').forEach(header => {
-        if (header.querySelector('h4')) {  // Only top-level categories
-            toggleCategory(header.textContent.trim().toLowerCase());
-        }
-    });
+    // Initialize progress bar if it exists
+    if (document.getElementById('formProgress')) {
+        updateProgress();
+    }
 });
 
 // Initialize charts only if they exist on the page
