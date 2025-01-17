@@ -7,8 +7,14 @@
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Welcome to Zu-Microbiome</h2>
                 <div id="kit-input" class="mb-4">
-                    <label for="kitId" class="form-label">Enter your Kit ID</label>
-                    <input type="text" class="form-control" id="kitId" placeholder="Enter your unique kit ID">
+                    <div class="mb-3">
+                        <label for="userName" class="form-label">Your Name</label>
+                        <input type="text" class="form-control" id="userName" placeholder="Enter your name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="kitId" class="form-label">Enter your Kit ID</label>
+                        <input type="text" class="form-control" id="kitId" placeholder="Enter your unique kit ID">
+                    </div>
                     <div class="d-grid gap-2 mt-3">
                         <button class="btn btn-primary" onclick="validateKitId()">Start Tracking</button>
                     </div>
@@ -23,13 +29,25 @@
 <script>
     function validateKitId() {
         const kitId = document.getElementById('kitId').value;
+        const userName = document.getElementById('userName').value;
 
         if (!kitId) {
-            alert('Please enter a Kit ID or Admin Code');
+            alert('Please enter a Kit ID');
             return;
         }
 
-        fetch(`/validate-kit/${kitId}`)
+        if (!userName) {
+            alert('Please enter your name');
+            return;
+        }
+
+        fetch(`/validate-kit/${kitId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: userName })
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.valid) {
@@ -37,6 +55,7 @@
                         window.location.href = '/admin/dashboard';
                     } else {
                         localStorage.setItem('kitId', kitId);
+                        localStorage.setItem('userName', userName);
                         window.location.href = '/track';
                     }
                 } else {

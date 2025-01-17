@@ -57,10 +57,27 @@ def get_menu(kit_id):
     return jsonify({"menu_data": None})
 
 
+@app.route('/get-menu-data')
+def get_menu_data():
+    kit_id = request.args.get('kitId')
+    if not kit_id:
+        return jsonify({"error": "No kit ID provided"}), 400
 
-@app.route('/validate-kit/<kit_id>')
+    from models import KitCode
+    kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()
+    if kit_code:
+        return jsonify({"menu_data": kit_code.menu_data})
+    return jsonify({"error": "Invalid kit ID"}), 404
+
+@app.route('/validate-kit/<kit_id>', methods=['POST'])
 def validate_kit(kit_id):
     from models import AnonymousUser, Admin, KitCode
+
+    data = request.get_json()
+    user_name = data.get('name')
+
+    if not user_name:
+        return jsonify({"valid": False, "error": "Name is required"}), 400
 
     # Check if it's an admin code
     admin = Admin.query.filter_by(username=kit_id).first()
@@ -74,6 +91,11 @@ def validate_kit(kit_id):
 
     # Only validate if both entries exist and the kit code is active
     is_valid = user is not None and kit_code is not None and kit_code.is_active
+
+    if is_valid:
+        # Update user name if valid
+        user.name = user_name
+        db.session.commit()
 
     return jsonify({"valid": is_valid, "is_admin": False})
 

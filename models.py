@@ -5,6 +5,7 @@ from datetime import datetime
 class AnonymousUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     kit_id = db.Column(db.String(36), unique=True, nullable=False)
+    name = db.Column(db.String(100))  # Added name field
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     @staticmethod
