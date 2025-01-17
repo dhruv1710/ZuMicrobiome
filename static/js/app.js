@@ -62,34 +62,114 @@ function prevStep(currentStepNum) {
     }
 }
 
-// New function to toggle category expansion
+// Modified function to toggle category expansion
 function toggleCategory(categoryId) {
     const content = document.getElementById(`${categoryId}-content`);
     const icon = document.querySelector(`[onclick="toggleCategory('${categoryId}')"] .category-icon`);
 
     if (content) {
         content.classList.toggle('expanded');
-        icon.classList.toggle('expanded');
+        if (icon) {
+            icon.classList.toggle('expanded');
+        }
     }
 }
 
 
-// Modified saveTracking function to handle hierarchical meal data and simplified mood
+// Modified loadMenuData function for proper menu rendering
+async function loadMenuData() {
+    const kitId = localStorage.getItem('kitId');
+    if (kitId) {
+        try {
+            const response = await fetch(`/get-menu-data?kitId=${kitId}`);
+            const data = await response.json();
+
+            if (data.menu_data) {
+                const menuData = data.menu_data;
+
+                // Function to create menu items for a meal type
+                const createMenuItems = (mealType, categories) => {
+                    const mealSection = document.getElementById(`${mealType}-content`);
+                    if (mealSection) {
+                        mealSection.innerHTML = ''; // Clear existing content
+
+                        // Create categories
+                        Object.entries(categories).forEach(([category, items]) => {
+                            const categoryDiv = document.createElement('div');
+                            categoryDiv.className = 'subcategory mb-3';
+
+                            // Category header
+                            categoryDiv.innerHTML = `
+                                <div class="category-header" onclick="toggleCategory('${mealType}-${category}')">
+                                    <i data-feather="chevron-right" class="category-icon"></i> 
+                                    ${category}
+                                </div>
+                                <div class="category-content" id="${mealType}-${category}-content">
+                                </div>
+                            `;
+
+                            mealSection.appendChild(categoryDiv);
+
+                            // Add items to category
+                            const categoryContent = document.getElementById(`${mealType}-${category}-content`);
+                            Object.keys(items).forEach(item => {
+                                const itemDiv = document.createElement('div');
+                                itemDiv.className = 'form-check';
+                                itemDiv.innerHTML = `
+                                    <input class="form-check-input" type="checkbox" 
+                                        id="${mealType}-${category}-${item}">
+                                    <label class="form-check-label" 
+                                        for="${mealType}-${category}-${item}">
+                                        ${item}
+                                    </label>
+                                `;
+                                categoryContent.appendChild(itemDiv);
+                            });
+                        });
+
+                        // Replace Feather icons in the newly added content
+                        feather.replace();
+                    }
+                };
+
+                // Create menu sections for each meal type
+                ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+                    if (menuData[mealType]) {
+                        createMenuItems(mealType, menuData[mealType]);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading menu data:', error);
+        }
+    }
+}
+
+// Modified saveTracking function for hierarchical meal data
 function saveTracking() {
     const getMealData = (mealType) => {
         const foods = {};
-        document.querySelectorAll(`#${mealType}-content input[type="checkbox"]`).forEach(checkbox => {
-            const category = checkbox.id.split('-')[1];
-            const food = checkbox.id.split('-')[2];
+        const mealSection = document.getElementById(`${mealType}-content`);
+        if (mealSection) {
+            // Get all categories in this meal section
+            const categories = mealSection.getElementsByClassName('subcategory');
+            Array.from(categories).forEach(category => {
+                const categoryName = category.querySelector('.category-header').textContent.trim();
+                foods[categoryName] = [];
 
-            if (!foods[category]) {
-                foods[category] = [];
-            }
+                // Get checked items in this category
+                const checkedItems = category.querySelectorAll('input[type="checkbox"]:checked');
+                checkedItems.forEach(item => {
+                    const itemName = item.nextElementSibling.textContent.trim();
+                    foods[categoryName].push(itemName);
+                });
 
-            if (checkbox.checked) {
-                foods[category].push(food);
-            }
-        });
+                // Remove empty categories
+                if (foods[categoryName].length === 0) {
+                    delete foods[categoryName];
+                }
+            });
+        }
         return foods;
     };
 
@@ -118,7 +198,6 @@ function saveTracking() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Redirect to insights page with new_submission parameter
             window.location.href = `/insights/${trackingData.kitId}?new_submission=true`;
         } else {
             alert('Failed to save data');
@@ -151,52 +230,6 @@ function validateKitId() {
         });
 }
 
-async function loadMenuData() {
-    const kitId = localStorage.getItem('kitId');
-    if (kitId) {
-        try {
-            const response = await fetch(`/get-menu-data?kitId=${kitId}`);
-            const data = await response.json();
-
-            if (data.menu_data) {
-                const menuData = data.menu_data;
-
-                // Function to create menu items for a meal type and category
-                const createMenuItems = (mealType, category, items) => {
-                    const container = document.getElementById(`${mealType}-${category}-content`);
-                    if (container && items) {
-                        container.innerHTML = ''; // Clear existing items
-                        items.forEach(item => {
-                            const div = document.createElement('div');
-                            div.className = 'form-check';
-                            div.innerHTML = `
-                                <input class="form-check-input" type="checkbox" 
-                                    id="${mealType}-${category}-${item}">
-                                <label class="form-check-label" 
-                                    for="${mealType}-${category}-${item}">
-                                    ${item.charAt(0).toUpperCase() + item.slice(1)}
-                                </label>
-                            `;
-                            container.appendChild(div);
-                        });
-                    }
-                };
-
-                // Populate menu items for each meal type and category
-                ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
-                    if (menuData[mealType]) {
-                        Object.entries(menuData[mealType]).forEach(([category, items]) => {
-                            createMenuItems(mealType, category, items);
-                        });
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error loading menu data:', error);
-        }
-    }
-}
-
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -206,7 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Replace Feather icons
     feather.replace();
-    loadMenuData(); 
+
+    // Load menu data
+    loadMenuData();
 
     // Expand first category by default in each step
     document.querySelectorAll('.category-header').forEach(header => {
