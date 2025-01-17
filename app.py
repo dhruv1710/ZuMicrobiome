@@ -72,30 +72,36 @@ def get_menu_data():
 @app.route('/validate-kit/<kit_id>', methods=['POST'])
 def validate_kit(kit_id):
     from models import AnonymousUser, Admin, KitCode
+    logging.debug(f"Validating kit ID: {kit_id}")
 
     data = request.get_json()
     user_name = data.get('name')
 
     if not user_name:
+        logging.debug("Name is required but not provided")
         return jsonify({"valid": False, "error": "Name is required"}), 400
 
     # Check if it's an admin code
     admin = Admin.query.filter_by(username=kit_id).first()
     if admin and admin.is_active:
         session['admin_id'] = admin.id
+        logging.debug(f"Admin login successful for: {kit_id}")
         return jsonify({"valid": True, "is_admin": True})
 
     # Check if it's a valid kit ID
     user = AnonymousUser.query.filter_by(kit_id=kit_id).first()
-    kit_code = KitCode.query.filter_by(code=kit_id).first()
+    kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()
+
+    logging.debug(f"User found: {user is not None}, Kit code found and active: {kit_code is not None}")
 
     # Only validate if both entries exist and the kit code is active
-    is_valid = user is not None and kit_code is not None and kit_code.is_active
+    is_valid = user is not None and kit_code is not None
 
     if is_valid:
         # Update user name if valid
         user.name = user_name
         db.session.commit()
+        logging.debug(f"Updated name for kit ID {kit_id} to {user_name}")
 
     return jsonify({"valid": is_valid, "is_admin": False})
 
@@ -399,6 +405,7 @@ def export_data(kit_id):
         'message': 'Data exported successfully'
     })
 
+# Initialize the database with test data
 with app.app_context():
     import models
     db.create_all()
@@ -416,10 +423,42 @@ with app.app_context():
         logging.info("Created default admin account: username='admin', password='admin123'")
 
     # Create a test kit ID if it doesn't exist
-    from models import AnonymousUser
-    test_kit = AnonymousUser.query.filter_by(kit_id='TEST123456').first()
-    if not test_kit:
-        test_kit = AnonymousUser(kit_id='TEST123456')
+    from models import AnonymousUser, KitCode
+    test_kit_id = 'TEST123456'
+    test_kit = AnonymousUser.query.filter_by(kit_id=test_kit_id).first()
+    test_kit_code = KitCode.query.filter_by(code=test_kit_id).first()
+
+    if not test_kit and not test_kit_code:
+        # Create test anonymous user
+        test_kit = AnonymousUser(kit_id=test_kit_id)
         db.session.add(test_kit)
+
+        # Create test kit code with menu data
+        test_menu_data = {
+            "breakfast": {
+                "fruits": ["apple", "banana", "orange"],
+                "grains": ["oatmeal", "bread", "cereal"],
+                "proteins": ["eggs", "yogurt"]
+            },
+            "lunch": {
+                "proteins": ["chicken", "fish", "tofu"],
+                "vegetables": ["salad", "carrots", "broccoli"],
+                "grains": ["rice", "pasta"]
+            },
+            "dinner": {
+                "proteins": ["beef", "salmon", "beans"],
+                "vegetables": ["spinach", "asparagus", "peas"],
+                "grains": ["quinoa", "bread"]
+            }
+        }
+
+        test_kit_code = KitCode(
+            code=test_kit_id,
+            batch_name='Test Batch',
+            menu_data=test_menu_data,
+            created_by=1,  # admin id
+            is_active=True
+        )
+        db.session.add(test_kit_code)
         db.session.commit()
-        logging.info("Created test kit ID: TEST123456")
+        logging.info(f"Created test kit ID: {test_kit_id} with menu data")

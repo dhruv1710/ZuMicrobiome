@@ -156,13 +156,41 @@ async function loadMenuData() {
     if (kitId) {
         try {
             const response = await fetch(`/get-menu-data?kitId=${kitId}`);
-            const menuData = await response.json();
-            // Assuming your menu data has a structure you can work with,  replace this with your actual rendering logic
-            console.log("Menu Data:", menuData);
-            //Example:  Update the DOM to display menuData.  You'll need to adapt this based on your HTML structure.
-            //document.getElementById('menu-container').innerHTML = JSON.stringify(menuData, null, 2);
+            const data = await response.json();
 
+            if (data.menu_data) {
+                const menuData = data.menu_data;
 
+                // Function to create menu items for a meal type and category
+                const createMenuItems = (mealType, category, items) => {
+                    const container = document.getElementById(`${mealType}-${category}-content`);
+                    if (container && items) {
+                        container.innerHTML = ''; // Clear existing items
+                        items.forEach(item => {
+                            const div = document.createElement('div');
+                            div.className = 'form-check';
+                            div.innerHTML = `
+                                <input class="form-check-input" type="checkbox" 
+                                    id="${mealType}-${category}-${item}">
+                                <label class="form-check-label" 
+                                    for="${mealType}-${category}-${item}">
+                                    ${item.charAt(0).toUpperCase() + item.slice(1)}
+                                </label>
+                            `;
+                            container.appendChild(div);
+                        });
+                    }
+                };
+
+                // Populate menu items for each meal type and category
+                ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+                    if (menuData[mealType]) {
+                        Object.entries(menuData[mealType]).forEach(([category, items]) => {
+                            createMenuItems(mealType, category, items);
+                        });
+                    }
+                });
+            }
         } catch (error) {
             console.error('Error loading menu data:', error);
         }
@@ -178,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Replace Feather icons
     feather.replace();
-    loadMenuData(); // Added loadMenuData call here
+    loadMenuData(); 
 
     // Expand first category by default in each step
     document.querySelectorAll('.category-header').forEach(header => {
@@ -187,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
 // Initialize charts only if they exist on the page
 document.addEventListener('DOMContentLoaded', function() {
     const moodChartCanvas = document.getElementById('moodChart');
