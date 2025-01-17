@@ -151,6 +151,24 @@ function validateKitId() {
         });
 }
 
+async function loadMenuData() {
+    const kitId = localStorage.getItem('kitId');
+    if (kitId) {
+        try {
+            const response = await fetch(`/get-menu-data?kitId=${kitId}`);
+            const menuData = await response.json();
+            // Assuming your menu data has a structure you can work with,  replace this with your actual rendering logic
+            console.log("Menu Data:", menuData);
+            //Example:  Update the DOM to display menuData.  You'll need to adapt this based on your HTML structure.
+            //document.getElementById('menu-container').innerHTML = JSON.stringify(menuData, null, 2);
+
+
+        } catch (error) {
+            console.error('Error loading menu data:', error);
+        }
+    }
+}
+
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -160,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Replace Feather icons
     feather.replace();
+    loadMenuData(); // Added loadMenuData call here
 
     // Expand first category by default in each step
     document.querySelectorAll('.category-header').forEach(header => {

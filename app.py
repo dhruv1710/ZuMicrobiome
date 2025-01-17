@@ -48,6 +48,16 @@ def index():
 def track():
     return render_template('track.html')
 
+@app.route('/get-menu/<kit_id>')
+def get_menu(kit_id):
+    from models import KitCode
+    kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()
+    if kit_code:
+        return jsonify({"menu_data": kit_code.menu_data})
+    return jsonify({"menu_data": None})
+
+
+
 @app.route('/validate-kit/<kit_id>')
 def validate_kit(kit_id):
     from models import AnonymousUser, Admin, KitCode
