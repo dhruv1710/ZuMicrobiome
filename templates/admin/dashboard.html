@@ -11,33 +11,10 @@
         </div>
     </div>
 
-    <!-- Manual Kit Code Addition -->
+    <!-- Kit Code Generation -->
     <div class="card mb-4">
         <div class="card-body">
-            <h3 class="card-title">Add Single Kit Code</h3>
-            <form method="POST" action="{{ url_for('add_kit_code') }}">
-                <div class="mb-3">
-                    <label for="code" class="form-label">Kit Code</label>
-                    <input type="text" class="form-control" id="code" name="code" required>
-                </div>
-                <div class="mb-3">
-                    <label for="single_batch_name" class="form-label">Batch Name</label>
-                    <input type="text" class="form-control" id="single_batch_name" name="batch_name" required>
-                </div>
-                <div class="mb-3">
-                    <label for="single_menu_data" class="form-label">Menu Data (JSON)</label>
-                    <textarea class="form-control" id="single_menu_data" name="menu_data" rows="5"></textarea>
-                    <small class="text-muted">Enter the menu options in JSON format</small>
-                </div>
-                <button type="submit" class="btn btn-primary">Add Kit Code</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Bulk Kit Code Generation -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h3 class="card-title">Generate Multiple Kit Codes</h3>
+            <h3 class="card-title">Generate New Kit Codes</h3>
             <form method="POST" action="{{ url_for('generate_kit_codes') }}">
                 <div class="mb-3">
                     <label for="batch_name" class="form-label">Batch Name</label>

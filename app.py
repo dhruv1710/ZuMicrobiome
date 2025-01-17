@@ -94,37 +94,6 @@ def admin_dashboard():
     kit_codes = KitCode.query.order_by(KitCode.created_at.desc()).all()
     return render_template('admin/dashboard.html', kit_codes=kit_codes)
 
-@app.route('/admin/add-code', methods=['POST'])
-@admin_required
-def add_kit_code():
-    from models import KitCode, AnonymousUser
-    code = request.form.get('code')
-    batch_name = request.form.get('batch_name')
-    menu_data = request.form.get('menu_data')
-
-    try:
-        menu_json = json.loads(menu_data) if menu_data else {}
-    except json.JSONDecodeError:
-        flash('Invalid JSON format for menu data', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    # Create KitCode entry
-    kit_code = KitCode(
-        code=code,
-        batch_name=batch_name,
-        menu_data=menu_json,
-        created_by=session['admin_id']
-    )
-    db.session.add(kit_code)
-
-    # Create corresponding AnonymousUser entry
-    anon_user = AnonymousUser(kit_id=code)
-    db.session.add(anon_user)
-
-    db.session.commit()
-    flash('Successfully added new kit code', 'success')
-    return redirect(url_for('admin_dashboard'))
-
 @app.route('/admin/generate-codes', methods=['POST'])
 @admin_required
 def generate_kit_codes():
