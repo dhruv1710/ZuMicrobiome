@@ -11,6 +11,29 @@
         </div>
     </div>
 
+    <!-- Kit Code Import -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Import Kit Codes</h3>
+            <form method="POST" action="{{ url_for('import_kit_codes') }}">
+                <div class="mb-3">
+                    <label for="batch_name" class="form-label">Batch Name</label>
+                    <input type="text" class="form-control" id="batch_name" name="batch_name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="codes" class="form-label">Kit Codes (one per line)</label>
+                    <textarea class="form-control" id="codes" name="codes" rows="5" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="menu_data" class="form-label">Menu Data (JSON)</label>
+                    <textarea class="form-control" id="menu_data" name="menu_data" rows="5"></textarea>
+                    <small class="text-muted">Enter the menu options in JSON format</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Import Codes</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Kit Code Generation -->
     <div class="card mb-4">
         <div class="card-body">
