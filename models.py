@@ -1,6 +1,16 @@
 from app import db
 import uuid
+import random
 from datetime import datetime
+
+# Short capital city names
+CITIES = ['rome', 'paris', 'tokyo', 'lima', 'delhi', 'cairo', 'seoul', 'oslo', 'milan', 'madrid', 
+          'dubai', 'doha', 'berlin', 'prague', 'kiev', 'athens', 'baku', 'minsk', 'amman', 'hanoi',
+          'lisbon', 'vienna', 'riyadh', 'manila', 'bogota', 'tunis', 'havana', 'rabat', 'taipei', 'muscat',
+          'yerevan', 'tbilisi', 'zagreb', 'sofia', 'riga', 'vilnius', 'astana', 'bishkek', 'tirana', 'thimpu']
+
+def generate_microbial_username():
+    return random.choice(CITIES)
 
 class AnonymousUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
