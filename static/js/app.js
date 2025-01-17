@@ -182,7 +182,9 @@ function saveTracking() {
             dinner: getMealData('dinner')
         },
         stool: {
-            type: document.querySelector('input[name="stoolType"]:checked')?.value
+            type: document.querySelector('input[name="stoolType"]:checked')?.value,
+            relief: parseInt(document.getElementById('reliefSlider')?.value || 3),
+            smell: parseInt(document.getElementById('smellSlider')?.value || 3)
         },
         mood: parseInt(document.getElementById('moodSlider').value)
     };
