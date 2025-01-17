@@ -74,13 +74,6 @@ def validate_kit(kit_id):
     from models import AnonymousUser, Admin, KitCode
     logging.debug(f"Validating kit ID: {kit_id}")
 
-    data = request.get_json()
-    user_name = data.get('name')
-
-    if not user_name:
-        logging.debug("Name is required but not provided")
-        return jsonify({"valid": False, "error": "Name is required"}), 400
-
     # Check if it's an admin code
     admin = Admin.query.filter_by(username=kit_id).first()
     if admin and admin.is_active:
@@ -98,10 +91,11 @@ def validate_kit(kit_id):
     is_valid = user is not None and kit_code is not None
 
     if is_valid:
-        # Update user name if valid
-        user.name = user_name
+        username = generate_microbial_username()
+        user.name = username
         db.session.commit()
-        logging.debug(f"Updated name for kit ID {kit_id} to {user_name}")
+        logging.debug(f"Generated username for kit ID {kit_id}: {username}")
+        return jsonify({"valid": is_valid, "is_admin": False, "username": username})
 
     return jsonify({"valid": is_valid, "is_admin": False})
 
