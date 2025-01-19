@@ -35,6 +35,7 @@ class TrackingEntry(db.Model):
     meals = db.Column(db.JSON)
     stool_type = db.Column(db.String(10))
     mood = db.Column(db.Integer)
+    mood_details = db.Column(db.JSON)  # Added mood_details column
     shared_with_community = db.Column(db.Boolean, default=True)
 
 class CommunityStats(db.Model):
