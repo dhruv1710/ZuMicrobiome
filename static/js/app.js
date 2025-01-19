@@ -1,3 +1,4 @@
+javascript
 // Check if service worker is supported
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -189,7 +190,13 @@ function saveTracking() {
             relief: parseInt(document.getElementById('reliefSlider')?.value || 3),
             smell: parseInt(document.getElementById('smellSlider')?.value || 3)
         },
-        mood: parseInt(document.getElementById('moodSlider').value)
+        mood: {
+            morning_mood: parseInt(document.querySelector('input[name="morning_mood"]:checked')?.value || 0),
+            meal_mood: parseInt(document.querySelector('input[name="meal_mood"]:checked')?.value || 0),
+            energy_level: parseInt(document.getElementById('energySlider')?.value || 3),
+            evening_mood: parseInt(document.querySelector('input[name="evening_mood"]:checked')?.value || 0),
+            overall_mood: parseInt(document.getElementById('overallMoodSlider')?.value || 3)
+        }
     };
 
     // Save to database
@@ -200,18 +207,18 @@ function saveTracking() {
         },
         body: JSON.stringify(trackingData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = `/insights/${trackingData.kitId}?new_submission=true`;
-        } else {
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/insights/${trackingData.kitId}?new_submission=true`;
+            } else {
+                alert('Failed to save data');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
             alert('Failed to save data');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to save data');
-    });
+        });
 }
 
 // Kit ID validation

@@ -134,13 +134,14 @@
                 <div class="card-body">
                     <h3 class="card-title">Daily Mood Tracking</h3>
 
-                    <!-- Question 1 -->
+                    <!-- Morning Mood -->
                     <div class="mb-4">
                         <h5>How did you feel in the first hour after waking up this morning?</h5>
                         <div class="d-grid gap-2">
                             {% for option in ["Energized and positive", "Calm and neutral", "Tired but okay", "Irritable or anxious", "Exhausted and low"] %}
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="morning_mood" id="morning_{{ loop.index }}" value="{{ loop.index }}">
+                                <input class="form-check-input" type="radio" name="morning_mood" 
+                                       id="morning_{{ loop.index }}" value="{{ loop.index }}">
                                 <label class="form-check-label" for="morning_{{ loop.index }}">
                                     {{ option }}
                                 </label>
@@ -149,13 +150,14 @@
                         </div>
                     </div>
 
-                    <!-- Question 2 -->
+                    <!-- Post-Meal Mood -->
                     <div class="mb-4">
                         <h5>How do you feel after your most recent meal?</h5>
                         <div class="d-grid gap-2">
                             {% for option in ["Satisfied and energized", "Content but sleepy", "Neutral and steady", "Uncomfortable or bloated", "Low and sluggish"] %}
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="meal_mood" id="meal_{{ loop.index }}" value="{{ loop.index }}">
+                                <input class="form-check-input" type="radio" name="meal_mood" 
+                                       id="meal_{{ loop.index }}" value="{{ loop.index }}">
                                 <label class="form-check-label" for="meal_{{ loop.index }}">
                                     {{ option }}
                                 </label>
@@ -164,7 +166,7 @@
                         </div>
                     </div>
 
-                    <!-- Question 3 -->
+                    <!-- Energy Level -->
                     <div class="mb-4">
                         <h5>What is your current energy level?</h5>
                         <div class="energy-slider p-4">
@@ -176,13 +178,14 @@
                         </div>
                     </div>
 
-                    <!-- Question 4 -->
+                    <!-- Evening Mood -->
                     <div class="mb-4">
                         <h5>How do you feel emotionally after dinner this evening?</h5>
                         <div class="d-grid gap-2">
                             {% for option in ["Relaxed and content", "Calm but tired", "Neutral and indifferent", "Restless or uneasy", "Sad or overwhelmed"] %}
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="evening_mood" id="evening_{{ loop.index }}" value="{{ loop.index }}">
+                                <input class="form-check-input" type="radio" name="evening_mood" 
+                                       id="evening_{{ loop.index }}" value="{{ loop.index }}">
                                 <label class="form-check-label" for="evening_{{ loop.index }}">
                                     {{ option }}
                                 </label>
@@ -191,7 +194,7 @@
                         </div>
                     </div>
 
-                    <!-- Question 5 -->
+                    <!-- Overall Mood -->
                     <div class="mb-4">
                         <h5>Looking back, how would you rate your overall mood for the entire day?</h5>
                         <div class="overall-mood-slider p-4">
@@ -216,7 +219,6 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
     // Load menu data
     loadMenuData();
 

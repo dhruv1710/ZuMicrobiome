@@ -271,12 +271,23 @@ def save_tracking():
     from models import TrackingEntry, CommunityStats
     data = request.json
 
-    # Create new tracking entry
+    # Calculate overall mood average from the detailed mood data
+    mood_data = data['mood']
+    overall_mood = (
+        mood_data.get('morning_mood', 0) +
+        mood_data.get('meal_mood', 0) +
+        mood_data.get('energy_level', 0) +
+        mood_data.get('evening_mood', 0) +
+        mood_data.get('overall_mood', 0)
+    ) / 5.0  # Average of all mood indicators
+
+    # Create new tracking entry with the calculated overall mood
     entry = TrackingEntry(
         kit_id=data['kitId'],
         meals=data['meals'],
         stool_type=data.get('stool', {}).get('type'),
-        mood=data['mood'],
+        mood=overall_mood,  # Store the averaged mood value
+        mood_details=mood_data,  # Store the detailed mood data
         date=datetime.now().date()
     )
     db.session.add(entry)
@@ -302,6 +313,7 @@ def save_tracking():
 
     db.session.commit()
     return jsonify({"success": True})
+
 
 
 @app.route('/admin/login', methods=['GET', 'POST'])
