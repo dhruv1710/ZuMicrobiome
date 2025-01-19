@@ -1,4 +1,3 @@
-javascript
 // Check if service worker is supported
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
