@@ -67,20 +67,27 @@
                             <div class="col-6 col-md-4">
                                 <div class="stool-type-card">
                                     <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
-                                    <label class="btn btn-outline-primary w-100" for="type{{ i }}" 
-                                           data-bs-toggle="tooltip" 
-                                           data-bs-placement="top" 
-                                           title="{% if i == 1 %}Separate hard lumps, like nuts. hard to pass
-                                                 {% elif i == 2 %}Sausage shaped but lumpy
-                                                 {% elif i == 3 %}Sausage shaped, but with cracks on surface
-                                                 {% elif i == 4 %}Sausage- or snake- like, smooth and soft
-                                                 {% elif i == 5 %}Soft blobs with clear-cut edges (easy to pass)
-                                                 {% elif i == 6 %}Fluffy pieces with ragged edges, mushy and fluids
-                                                 {% elif i == 7 %}Watery, no solid pieces (entirely liquid)
-                                                 {% endif %}">
+                                    <label class="btn btn-outline-primary w-100" for="type{{ i }}">
                                         <img src="{{ url_for('static', filename='images/' + i|string + '.png') }}"
                                              alt="Type {{ i }}" class="img-fluid mb-2">
                                         <span class="d-block">Type {{ i }}</span>
+                                        <small class="d-block text-muted mt-2">
+                                            {% if i == 1 %}
+                                                Separate hard lumps, like nuts. hard to pass
+                                            {% elif i == 2 %}
+                                                Sausage shaped but lumpy
+                                            {% elif i == 3 %}
+                                                Sausage shaped, but with cracks on surface
+                                            {% elif i == 4 %}
+                                                Sausage- or snake- like, smooth and soft
+                                            {% elif i == 5 %}
+                                                Soft blobs with clear-cut edges (easy to pass)
+                                            {% elif i == 6 %}
+                                                Fluffy pieces with ragged edges, mushy and fluids
+                                            {% elif i == 7 %}
+                                                Watery, no solid pieces (entirely liquid)
+                                            {% endif %}
+                                        </small>
                                     </label>
                                 </div>
                             </div>
