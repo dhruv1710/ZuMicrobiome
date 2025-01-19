@@ -12,10 +12,11 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Form navigation functions
-let currentStep = 1;
+// Global variables
 const totalSteps = 3;
+let currentStep = 1;
 
+// Form navigation functions
 function updateProgress() {
     const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
     document.getElementById('formProgress').style.width = `${progress}%`;
