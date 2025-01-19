@@ -9,17 +9,11 @@ import random
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# List of capital cities for username generation
-CAPITAL_CITIES = [
-    "Tokyo", "Paris", "London", "Berlin", "Rome", "Madrid", "Moscow", "Cairo",
-    "Bangkok", "Seoul", "Beijing", "Delhi", "Sydney", "Toronto", "Lima",
-    "Vienna", "Prague", "Athens", "Oslo", "Dublin", "Amsterdam", "Brussels",
-    "Copenhagen", "Helsinki", "Stockholm", "Warsaw", "Budapest", "Lisbon"
-]
+#List of capital cities for username generation REMOVED
 
-def generate_microbial_username():
+def generate_microbial_username(): #Function REMOVED
     """Generate a unique username using a capital city name"""
-    return random.choice(CAPITAL_CITIES)
+    return random.choice(CAPITAL_CITIES) #Function REMOVED
 
 class Base(DeclarativeBase):
     pass
@@ -115,8 +109,8 @@ def validate_kit(kit_id):
     is_valid = user is not None and kit_code is not None
 
     if is_valid:
-        # Generate or get existing username
-        username = user.name or generate_microbial_username()
+        # Generate username from last 4 characters of kit ID
+        username = f"User_{kit_id[-4:].upper()}"
         if not user.name:
             user.name = username
             db.session.commit()
@@ -141,7 +135,8 @@ def validate_kit(kit_id):
             "username": username,
             "has_tracked": entry is not None,
             "has_previous_entries": last_entry is not None,
-            "last_entry_date": last_entry.date.strftime('%Y-%m-%d') if last_entry else None
+            "last_entry_date": last_entry.date.strftime('%Y-%m-%d') if last_entry else None,
+            "show_username_warning": True  # Added flag to show username warning
         })
 
     return jsonify({"valid": is_valid, "is_admin": False})

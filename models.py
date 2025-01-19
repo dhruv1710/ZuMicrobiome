@@ -1,21 +1,11 @@
 from app import db
 import uuid
-import random
 from datetime import datetime
-
-# Short capital city names
-CITIES = ['rome', 'paris', 'tokyo', 'lima', 'delhi', 'cairo', 'seoul', 'oslo', 'milan', 'madrid', 
-          'dubai', 'doha', 'berlin', 'prague', 'kiev', 'athens', 'baku', 'minsk', 'amman', 'hanoi',
-          'lisbon', 'vienna', 'riyadh', 'manila', 'bogota', 'tunis', 'havana', 'rabat', 'taipei', 'muscat',
-          'yerevan', 'tbilisi', 'zagreb', 'sofia', 'riga', 'vilnius', 'astana', 'bishkek', 'tirana', 'thimpu']
-
-def generate_microbial_username():
-    return random.choice(CITIES)
 
 class AnonymousUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     kit_id = db.Column(db.String(36), unique=True, nullable=False)
-    name = db.Column(db.String(100))  # Added name field
+    name = db.Column(db.String(100))  # This will store the generated username
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     @staticmethod
