@@ -64,7 +64,7 @@
                     <div class="stool-types">
                         <div class="row g-4 mb-4">
                             {% for i in range(1, 8) %}
-                            <div class="col-6 col-md-4">
+                            <div class="col-md-6">
                                 <div class="stool-type-card">
                                     <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
                                     <label class="btn btn-outline-primary w-100" for="type{{ i }}">
@@ -132,17 +132,74 @@
         <div class="form-step d-none" id="step3">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h3 class="card-title">Daily Mood</h3>
-                    <div class="mood-tracker p-4">
-                        <input type="range" class="form-range" min="1" max="7" step="1" id="moodSlider" value="4">
-                        <div class="mood-labels d-flex justify-content-between mt-2">
-                            <span>😢</span>
-                            <span>😞</span>
-                            <span>😕</span>
-                            <span>😐</span>
-                            <span>🙂</span>
-                            <span>😊</span>
-                            <span>😄</span>
+                    <h3 class="card-title">Daily Mood Tracking</h3>
+
+                    <!-- Question 1 -->
+                    <div class="mb-4">
+                        <h5>How did you feel in the first hour after waking up this morning?</h5>
+                        <div class="d-grid gap-2">
+                            {% for option in ["Energized and positive", "Calm and neutral", "Tired but okay", "Irritable or anxious", "Exhausted and low"] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="morning_mood" id="morning_{{ loop.index }}" value="{{ loop.index }}">
+                                <label class="form-check-label" for="morning_{{ loop.index }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="mb-4">
+                        <h5>How do you feel after your most recent meal?</h5>
+                        <div class="d-grid gap-2">
+                            {% for option in ["Satisfied and energized", "Content but sleepy", "Neutral and steady", "Uncomfortable or bloated", "Low and sluggish"] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="meal_mood" id="meal_{{ loop.index }}" value="{{ loop.index }}">
+                                <label class="form-check-label" for="meal_{{ loop.index }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="mb-4">
+                        <h5>What is your current energy level?</h5>
+                        <div class="energy-slider p-4">
+                            <input type="range" class="form-range" min="1" max="5" step="1" id="energySlider" name="energy_level">
+                            <div class="d-flex justify-content-between mt-2">
+                                <small>Completely drained</small>
+                                <small>Fully energized</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="mb-4">
+                        <h5>How do you feel emotionally after dinner this evening?</h5>
+                        <div class="d-grid gap-2">
+                            {% for option in ["Relaxed and content", "Calm but tired", "Neutral and indifferent", "Restless or uneasy", "Sad or overwhelmed"] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="evening_mood" id="evening_{{ loop.index }}" value="{{ loop.index }}">
+                                <label class="form-check-label" for="evening_{{ loop.index }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Question 5 -->
+                    <div class="mb-4">
+                        <h5>Looking back, how would you rate your overall mood for the entire day?</h5>
+                        <div class="overall-mood-slider p-4">
+                            <input type="range" class="form-range" min="1" max="5" step="1" id="overallMoodSlider" name="overall_mood">
+                            <div class="d-flex justify-content-between mt-2">
+                                <small>Very negative</small>
+                                <small>Very positive</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -159,16 +216,6 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
-
-    // Initialize progress bar if it exists
-    if (document.getElementById('formProgress')) {
-        updateProgress();
-    }
 
     // Load menu data
     loadMenuData();
