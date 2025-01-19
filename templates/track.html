@@ -68,25 +68,13 @@
                                 <div class="stool-type-card">
                                     <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
                                     <label class="btn btn-outline-primary w-100" for="type{{ i }}">
-                                        <img src="{{ url_for('static', filename='images/type' + i|string + '.svg') }}"
-                                             alt="Type {{ i }}" class="img-fluid mb-2" id="stoolImage{{ i }}">
+                                        <img src="{{ url_for('static', filename='images/' + i|string + '.png') }}"
+                                             alt="Type {{ i }}" class="img-fluid mb-2">
                                         <span class="d-block">Type {{ i }}</span>
                                     </label>
                                 </div>
                             </div>
                             {% endfor %}
-                        </div>
-                        <div class="stool-color-selector p-4">
-                            <label class="form-label">Select Color</label>
-                            <input type="range" class="form-range" min="0" max="5" step="1" id="colorSlider" value="0">
-                            <div class="color-labels d-flex justify-content-between mt-2">
-                                <span class="color-dot" style="background-color: #8B4513">🟤</span>
-                                <span class="color-dot" style="background-color: #FFD700">🟡</span>
-                                <span class="color-dot" style="background-color: #228B22">🟢</span>
-                                <span class="color-dot" style="background-color: #FF0000">🔴</span>
-                                <span class="color-dot" style="background-color: #FFFFFF">⚪</span>
-                                <span class="color-dot" style="background-color: #000000">⚫</span>
-                            </div>
                         </div>
 
                         <!-- New Sense of Relief Slider -->
@@ -153,41 +141,18 @@
 
 {% block scripts %}
 <script>
-    // Array of preset colors
-    const stoolColors = ['#8B4513', '#FFD700', '#228B22', '#FF0000', '#FFFFFF', '#000000'];
+// Remove the stoolColors array and SVG manipulation code since we're using PNG images
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize progress bar if it exists
+    if (document.getElementById('formProgress')) {
+        updateProgress();
+    }
 
-    // Handle color slider changes
-    const colorSlider = document.getElementById('colorSlider');
-    colorSlider.addEventListener('input', function(e) {
-        const selectedColor = stoolColors[e.target.value];
-        const selectedStoolType = document.querySelector('input[name="stoolType"]:checked');
+    // Load menu data
+    loadMenuData();
 
-        if (selectedStoolType) {
-            const stoolImage = document.getElementById(`stoolImage${selectedStoolType.value}`);
-
-            // Update the SVG color
-            fetch(stoolImage.getAttribute('src'))
-                .then(response => response.text())
-                .then(svgContent => {
-                    // Replace all fill colors in the SVG
-                    const newSvgContent = svgContent.replace(/#[0-9A-F]{6}/gi, selectedColor);
-                    // Create a blob from the modified SVG
-                    const blob = new Blob([newSvgContent], {type: 'image/svg+xml'});
-                    // Update the image source
-                    stoolImage.src = URL.createObjectURL(blob);
-                });
-        }
-    });
-
-    // Update color slider when stool type is selected
-    document.querySelectorAll('input[name="stoolType"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (!colorSlider.value) {
-                colorSlider.value = 0; // Default to brown
-                const event = new Event('input');
-                colorSlider.dispatchEvent(event);
-            }
-        });
-    });
+    // Replace Feather icons
+    feather.replace();
+});
 </script>
 {% endblock %}
