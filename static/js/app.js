@@ -1,17 +1,4 @@
-// Check if service worker is supported
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/js/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registration successful');
-            })
-            .catch(err => {
-                console.log('ServiceWorker registration failed: ', err);
-            });
-    });
-}
-
-// Global variables
+// Global variables - moved to top
 const totalSteps = 3;
 let currentStep = 1;
 
@@ -22,9 +9,12 @@ function updateProgress() {
 }
 
 function showStep(step) {
-    const steps = document.querySelectorAll('.form-step');
+    if (step < 1 || step > totalSteps) return;
+
     const currentStepElement = document.getElementById(`step${currentStep}`);
     const nextStepElement = document.getElementById(`step${step}`);
+
+    if (!nextStepElement) return;
 
     // First hide the current step with animation
     if (currentStepElement) {
@@ -61,6 +51,19 @@ function prevStep(currentStepNum) {
     if (currentStepNum > 1) {
         showStep(currentStepNum - 1);
     }
+}
+
+// Check if service worker is supported
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/js/sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
 }
 
 // Array of preset colors (remove duplicate declaration)
