@@ -1,13 +1,25 @@
 import os
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 import logging
 from datetime import datetime, timedelta
 import random
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
+
+# Admin authentication decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            flash('Please login first.', 'error')
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 #List of capital cities for username generation REMOVED
 
@@ -290,6 +302,119 @@ def save_tracking():
 
     db.session.commit()
     return jsonify({"success": True})
+
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        from models import Admin
+        admin = Admin.query.filter_by(username=username).first()
+
+        if admin and check_password_hash(admin.password_hash, password):
+            session['admin_id'] = admin.id
+            flash('Login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
+
+        flash('Invalid credentials', 'error')
+        return redirect(url_for('admin_login'))
+
+    return render_template('admin/login.html')
+
+@app.route('/admin/logout')
+@admin_required
+def admin_logout():
+    session.pop('admin_id', None)
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    from models import KitCode
+    kit_codes = KitCode.query.order_by(KitCode.created_at.desc()).all()
+    return render_template('admin/dashboard.html', kit_codes=kit_codes)
+
+@app.route('/admin/import-kit-codes', methods=['POST'])
+@admin_required
+def import_kit_codes():
+    batch_name = request.form.get('batch_name')
+    codes = request.form.get('codes').strip().split('\n')
+    menu_data = request.form.get('menu_data')
+
+    from models import KitCode
+    admin_id = session.get('admin_id')
+
+    for code in codes:
+        code = code.strip()
+        if code:
+            kit_code = KitCode(
+                code=code,
+                batch_name=batch_name,
+                menu_data=menu_data,
+                created_by=admin_id
+            )
+            db.session.add(kit_code)
+
+    db.session.commit()
+    flash(f'Successfully imported {len(codes)} kit codes.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/generate-kit-codes', methods=['POST'])
+@admin_required
+def generate_kit_codes():
+    batch_name = request.form.get('batch_name')
+    quantity = int(request.form.get('quantity', 10))
+    menu_data = request.form.get('menu_data')
+
+    from models import KitCode
+    import uuid
+    admin_id = session.get('admin_id')
+
+    for _ in range(quantity):
+        code = str(uuid.uuid4())
+        kit_code = KitCode(
+            code=code,
+            batch_name=batch_name,
+            menu_data=menu_data,
+            created_by=admin_id
+        )
+        db.session.add(kit_code)
+
+    db.session.commit()
+    flash(f'Successfully generated {quantity} new kit codes.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/toggle-kit-code/<int:code_id>', methods=['POST'])
+@admin_required
+def toggle_kit_code(code_id):
+    from models import KitCode
+    kit_code = KitCode.query.get_or_404(code_id)
+    kit_code.is_active = not kit_code.is_active
+    db.session.commit()
+
+    status = 'activated' if kit_code.is_active else 'deactivated'
+    flash(f'Kit code {kit_code.code} has been {status}.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# Initialize the database and create default admin account
+with app.app_context():
+    db.create_all()
+
+    # Create default admin account if it doesn't exist
+    from models import Admin
+    default_admin = Admin.query.filter_by(username='Microbiome').first()
+    if not default_admin:
+        admin = Admin(
+            username='Microbiome',
+            password_hash=generate_password_hash('MBDao'),
+            is_active=True
+        )
+        db.session.add(admin)
+        db.session.commit()
+        logging.info('Default admin account created')
 
 # Initialize the database
 with app.app_context():
