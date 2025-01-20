@@ -61,13 +61,13 @@ if ('serviceWorker' in navigator) {
 }
 
 // Modified loadMenuData function for proper menu rendering
-async function loadMenuData() {
+async function loadMenuData(meal_type) {
     const kitId = localStorage.getItem('kitId');
     if (kitId) {
         try {
             const response = await fetch(`/get-menu-data?kitId=${kitId}`);
             const data = await response.json();
-
+            console.log('Menu data:', data);
             if (data.menu_data) {
                 const menuData = data.menu_data;
 
