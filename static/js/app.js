@@ -65,7 +65,7 @@ async function loadMenuData(meal_type) {
     const kitId = localStorage.getItem('kitId');
     if (kitId) {
         try {
-            const response = await fetch(`/get-menu-data?kitId=${kitId}`);
+            const response = await fetch(`/get-menu-data?kitId=${kitId}&meal_type=${meal_type}`);
             const data = await response.json();
             console.log('Menu data:', data);
             if (data.menu_data) {
