@@ -7,6 +7,10 @@ async function loadMenuData(mealType) {
         parsed = JSON.parse(data.menu_data)[mealType];
         if (parsed) {
             const contentDiv = document.getElementById(`${mealType}-content`);
+            if (!contentDiv) {
+                console.error(`Content div for ${mealType} not found`);
+                return;
+            }
             contentDiv.innerHTML = ''; // Clear existing content
 
             // Iterate through menu categories
