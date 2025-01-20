@@ -53,6 +53,35 @@ with app.app_context():
         db.session.commit()
         logging.info('Default admin account created')
 
+@app.route('/save-lifestyle', methods=['POST'])
+def save_lifestyle():
+    if 'kit_id' not in session:
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=session['kit_id'],
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=session['kit_id'],
+                date=datetime.now().date()
+            )
+            db.session.add(entry)
+
+        # Save lifestyle data
+        if entry.lifestyle_log:
+            return jsonify({"success": False, "error": "Lifestyle already logged for today"}), 400
+
+        entry.lifestyle_log = request.json
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving lifestyle data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/dashboard')
 def dashboard():
     if 'kit_id' not in session:
@@ -74,6 +103,7 @@ def dashboard():
     lunch_logged = 'lunch' in meals
     dinner_logged = 'dinner' in meals
     stool_logged = True if entry and entry.stool_type else False
+    lifestyle_logged = True if entry and entry.lifestyle_log else False
 
     # Get streak information
     streak_info = TrackingEntry.get_user_streaks(session['kit_id'])
@@ -130,6 +160,7 @@ def dashboard():
                          lunch_logged=lunch_logged,
                          dinner_logged=dinner_logged,
                          stool_logged=stool_logged,
+                         lifestyle_logged=lifestyle_logged,
                          current_streak=current_streak,
                          best_streak=best_streak,
                          next_milestone=next_milestone,

@@ -112,6 +112,49 @@
                 </div>
             </div>
         </div>
+        <!-- Lifestyle Log -->
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-heart fa-3x mb-3"></i>
+                    <h3>Lifestyle Log</h3>
+                    <form id="lifestyleLogForm" class="mt-3">
+                        <div class="lifestyle-options">
+                            <div class="mb-3">
+                                <label class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="yoga" id="yoga" {% if lifestyle_logged %}disabled{% endif %}>
+                                    <span class="form-check-label">Yoga</span>
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="cardio" id="cardio" {% if lifestyle_logged %}disabled{% endif %}>
+                                    <span class="form-check-label">Cardio</span>
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="strength" id="strength" {% if lifestyle_logged %}disabled{% endif %}>
+                                    <span class="form-check-label">Strength</span>
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="meditation" id="meditation" {% if lifestyle_logged %}disabled{% endif %}>
+                                    <span class="form-check-label">Meditation</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary mt-3 w-100" 
+                                onclick="saveLifestyleLog()"
+                                {% if lifestyle_logged %}disabled{% endif %}>
+                            Log Lifestyle Data
+                            {% if lifestyle_logged %}(Logged){% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -163,5 +206,35 @@ document.addEventListener('DOMContentLoaded', function() {
     achievementModal.show();
     {% endif %}
 });
+</script>
+<script>
+async function saveLifestyleLog() {
+    const form = document.getElementById('lifestyleLogForm');
+    const data = {
+        yoga: form.yoga.checked,
+        cardio: form.cardio.checked,
+        strength: form.strength.checked,
+        meditation: form.meditation.checked
+    };
+
+    try {
+        const response = await fetch('/save-lifestyle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            location.reload(); // Reload to update UI
+        } else {
+            alert('Failed to save lifestyle data');
+        }
+    } catch (error) {
+        console.error('Error saving lifestyle data:', error);
+        alert('Failed to save lifestyle data');
+    }
+}
 </script>
 {% endblock %}
