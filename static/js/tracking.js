@@ -4,13 +4,13 @@ async function loadMenuData(mealType) {
         const kitId = localStorage.getItem('kitId');
         const response = await fetch(`/get-menu-data?kitId=${kitId}&meal_type=${mealType}`);
         const data = await response.json();
-
-        if (data.menu_data && data.menu_data[mealType]) {
+        parsed = JSON.parse(data.menu_data)[mealType];
+        if (parsed) {
             const contentDiv = document.getElementById(`${mealType}-content`);
             contentDiv.innerHTML = ''; // Clear existing content
 
             // Iterate through menu categories
-            Object.entries(data.menu_data[mealType]).forEach(([category, items]) => {
+            Object.entries(parsed).forEach(([category, items]) => {
                 const categoryDiv = document.createElement('div');
                 categoryDiv.className = 'category-section mb-3';
 
