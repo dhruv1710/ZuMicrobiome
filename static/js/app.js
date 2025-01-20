@@ -61,76 +61,76 @@ if ('serviceWorker' in navigator) {
 }
 
 // Modified loadMenuData function for proper menu rendering
-async function loadMenuData(meal_type) {
-    const kitId = localStorage.getItem('kitId');
-    if (kitId && meal_type) {
-        try {
-            const response = await fetch(`/get-menu-data?kitId=${kitId}&meal_type=${meal_type}`);
-            const data = await response.json();
-            console.log('Menu data:', data);
-            if (data.menu_data) {
-                const menuData = JSON.parse(data.menu_data);
-                console.log(`meal data: ${JSON.stringify(menuData[meal_type])}`)
-                // Function to create menu items for a meal type
-                const createMenuItems = (mealType, categories) => {
-                    const mealSection = document.getElementById(`${mealType}-content`);
-                    console.log(`meal section: ${mealSection}`)
-                    console.log(`categories: ${categories}`)
-                    if (mealSection) {
-                        mealSection.innerHTML = ''; // Clear existing content
+// async function loadMenuData(meal_type) {
+//     const kitId = localStorage.getItem('kitId');
+//     if (kitId && meal_type) {
+//         try {
+//             const response = await fetch(`/get-menu-data?kitId=${kitId}&meal_type=${meal_type}`);
+//             const data = await response.json();
+//             console.log('Menu data:', data);
+//             if (data.menu_data) {
+//                 const menuData = JSON.parse(data.menu_data);
+//                 console.log(`meal data: ${JSON.stringify(menuData[meal_type])}`)
+//                 // Function to create menu items for a meal type
+//                 const createMenuItems = (mealType, categories) => {
+//                     const mealSection = document.getElementById(`${mealType}-content`);
+//                     console.log(`meal section: ${mealSection}`)
+//                     console.log(`categories: ${categories}`)
+//                     if (mealSection) {
+//                         mealSection.innerHTML = ''; // Clear existing content
                         
-                        // Create categories
-                        Object.entries(categories).forEach(([category, items]) => {
-                            const categoryDiv = document.createElement('div');
-                            categoryDiv.className = 'meal-category mb-3';
+//                         // Create categories
+//                         Object.entries(categories).forEach(([category, items]) => {
+//                             const categoryDiv = document.createElement('div');
+//                             categoryDiv.className = 'meal-category mb-3';
 
-                            const categoryContent = `
-                                <div class="category-header" onclick="toggleCategory('${mealType}-${category}')">
-                                    <h5>
-                                        <i data-feather="chevron-right" class="category-icon"></i>
-                                        ${category.charAt(0).toUpperCase() + category.slice(1)}
-                                    </h5>
-                                </div>
-                                <div class="category-content" id="${mealType}-${category}-content">
-                                    ${Object.keys(items).map(item => `
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" 
-                                                id="${mealType}-${category}-${item}"
-                                                name="${mealType}-${category}-${item}">
-                                            <label class="form-check-label" 
-                                                for="${mealType}-${category}-${item}">
-                                                ${item}
-                                            </label>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `;
+//                             const categoryContent = `
+//                                 <div class="category-header" onclick="toggleCategory('${mealType}-${category}')">
+//                                     <h5>
+//                                         <i data-feather="chevron-right" class="category-icon"></i>
+//                                         ${category.charAt(0).toUpperCase() + category.slice(1)}
+//                                     </h5>
+//                                 </div>
+//                                 <div class="category-content" id="${mealType}-${category}-content">
+//                                     ${Object.keys(items).map(item => `
+//                                         <div class="form-check">
+//                                             <input class="form-check-input" type="checkbox" 
+//                                                 id="${mealType}-${category}-${item}"
+//                                                 name="${mealType}-${category}-${item}">
+//                                             <label class="form-check-label" 
+//                                                 for="${mealType}-${category}-${item}">
+//                                                 ${item}
+//                                             </label>
+//                                         </div>
+//                                     `).join('')}
+//                                 </div>
+//                             `;
 
-                            categoryDiv.innerHTML = categoryContent;
-                            mealSection.appendChild(categoryDiv);
-                        });
+//                             categoryDiv.innerHTML = categoryContent;
+//                             mealSection.appendChild(categoryDiv);
+//                         });
 
-                        // Initialize Feather icons
-                        feather.replace();
-                    }
-                };
+//                         // Initialize Feather icons
+//                         feather.replace();
+//                     }
+//                 };
 
-                // Create menu sections for each meal type
-                [meal_type].forEach(mealType => {
-                    if (menuData[mealType]) {
-                        createMenuItems(mealType, menuData[mealType]);
-                    }
-                });
-            } else {
-                console.error('No menu data available:', data.error);
-            }
-        } catch (error) {
-            console.error('Error loading menu data:', error);
-        }
-    } else {
-        console.error('No kit ID or meal type found in localStorage');
-    }
-}
+//                 // Create menu sections for each meal type
+//                 [meal_type].forEach(mealType => {
+//                     if (menuData[mealType]) {
+//                         createMenuItems(mealType, menuData[mealType]);
+//                     }
+//                 });
+//             } else {
+//                 console.error('No menu data available:', data.error);
+//             }
+//         } catch (error) {
+//             console.error('Error loading menu data:', error);
+//         }
+//     } else {
+//         console.error('No kit ID or meal type found in localStorage');
+//     }
+// }
 
 // Handle category expansion
 function toggleCategory(categoryId) {
@@ -171,35 +171,35 @@ function getMealData(mealType) {
 }
 
 // Async submission functions for each section
-async function saveMealData(mealType) {
-    const mealData = {
-        date: new Date().toISOString(),
-        kitId: localStorage.getItem('kitId'),
-        type: mealType,
-        foods: getMealData(mealType)
-    };
+// async function saveMealData(mealType) {
+//     const mealData = {
+//         date: new Date().toISOString(),
+//         kitId: localStorage.getItem('kitId'),
+//         type: mealType,
+//         foods: getMealData(mealType)
+//     };
 
-    try {
-        const response = await fetch('/save-meal', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(mealData)
-        });
+//     try {
+//         const response = await fetch('/save-meal', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify(mealData)
+//         });
 
-        const result = await response.json();
-        if (result.success) {
-            alert(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)} data saved successfully!`);
-            window.location.href = '/';
-        } else {
-            alert('Failed to save meal data');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to save meal data');
-    }
-}
+//         const result = await response.json();
+//         if (result.success) {
+//             alert(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)} data saved successfully!`);
+//             window.location.href = '/';
+//         } else {
+//             alert('Failed to save meal data');
+//         }
+//     } catch (error) {
+//         console.error('Error:', error);
+//         alert('Failed to save meal data');
+//     }
+// }
 
 async function saveStoolData() {
     const stoolData = {

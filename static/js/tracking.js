@@ -34,7 +34,7 @@ async function loadMenuData(mealType) {
                         itemDiv.className = 'form-check';
                         itemDiv.innerHTML = `
                             <input class="form-check-input" type="checkbox" value="${item}" 
-                                   id="${mealType}-${category}-${item.replace(/\s+/g, '-')}">
+                                   id="${mealType}-${category}-${item.replace(/\s+/g, '-')}" />
                             <label class="form-check-label" for="${mealType}-${category}-${item.replace(/\s+/g, '-')}">
                                 ${item}
                             </label>
@@ -57,6 +57,8 @@ async function loadMenuData(mealType) {
 
             // Replace Feather icons
             feather.replace();
+        } else {
+            console.warn('No data available for the specified meal type');
         }
     } catch (error) {
         console.error('Error loading menu data:', error);
