@@ -251,9 +251,15 @@ def track_mood():
 @app.route('/get-menu-data')
 def get_menu_data():
     kit_id = request.args.get('kitId')
+    meal_type = request.args.get('meal_type')
+    
     if not kit_id:
         logging.debug("No kit ID provided in get-menu-data request")
         return jsonify({"error": "No kit ID provided"}), 400
+        
+    if not meal_type:
+        logging.debug("No meal type provided in get-menu-data request")
+        return jsonify({"error": "No meal type provided"}), 400
 
     logging.debug(f"Fetching menu data for kit ID: {kit_id}")
     kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()

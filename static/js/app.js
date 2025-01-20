@@ -63,7 +63,7 @@ if ('serviceWorker' in navigator) {
 // Modified loadMenuData function for proper menu rendering
 async function loadMenuData(meal_type) {
     const kitId = localStorage.getItem('kitId');
-    if (kitId) {
+    if (kitId && meal_type) {
         try {
             const response = await fetch(`/get-menu-data?kitId=${kitId}&meal_type=${meal_type}`);
             const data = await response.json();
@@ -126,7 +126,7 @@ async function loadMenuData(meal_type) {
             console.error('Error loading menu data:', error);
         }
     } else {
-        console.error('No kit ID found in localStorage');
+        console.error('No kit ID or meal type found in localStorage');
     }
 }
 
@@ -275,8 +275,8 @@ async function saveMoodData() {
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Load menu data
-    loadMenuData();
+    // Load menu data -  Call loadMenuData with meal type parameter
+    loadMenuData('breakfast'); // Example: Load breakfast menu data.  Adjust 'breakfast' as needed.
 
     // Replace Feather icons
     feather.replace();
