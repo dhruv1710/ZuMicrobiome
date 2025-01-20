@@ -189,6 +189,7 @@ async function saveMealData(mealType) {
         const result = await response.json();
         if (result.success) {
             alert(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)} data saved successfully!`);
+            window.location.href = '/';
         } else {
             alert('Failed to save meal data');
         }
@@ -219,6 +220,7 @@ async function saveStoolData() {
         const result = await response.json();
         if (result.success) {
             alert('Stool data saved successfully!');
+            window.location.href = '/';
         } else {
             alert('Failed to save stool data');
         }
@@ -253,6 +255,7 @@ async function saveMoodData() {
         const result = await response.json();
         if (result.success) {
             alert('Mood data saved successfully!');
+            window.location.href = '/';
         } else {
             alert('Failed to save mood data');
         }
