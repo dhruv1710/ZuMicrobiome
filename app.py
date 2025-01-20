@@ -280,53 +280,110 @@ def get_insights(kit_id):
                          has_data=bool(latest_entry),
                          trend_data=trend_data if show_trends else None)
 
+
+@app.route('/save-meal', methods=['POST'])
+def save_meal():
+    data = request.json
+    kit_id = data.get('kitId')
+    meal_type = data.get('type')
+    foods = data.get('foods', {})
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=datetime.now().date(),
+                meals={}
+            )
+            db.session.add(entry)
+
+        # Update only the specific meal
+        if not entry.meals:
+            entry.meals = {}
+        entry.meals[meal_type] = foods
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving meal data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/save-stool', methods=['POST'])
+def save_stool():
+    data = request.json
+    kit_id = data.get('kitId')
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=datetime.now().date()
+            )
+            db.session.add(entry)
+
+        entry.stool_type = data.get('type')
+        entry.stool_details = {
+            'relief': data.get('relief'),
+            'smell': data.get('smell')
+        }
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving stool data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/save-mood', methods=['POST'])
+def save_mood():
+    data = request.json
+    kit_id = data.get('kitId')
+    mood_data = data.get('mood', {})
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=datetime.now().date()
+            )
+            db.session.add(entry)
+
+        # Calculate overall mood average
+        mood_values = [
+            mood_data.get('morning_mood', 0),
+            mood_data.get('meal_mood', 0),
+            mood_data.get('energy_level', 0),
+            mood_data.get('evening_mood', 0),
+            mood_data.get('overall_mood', 0)
+        ]
+        non_zero_values = [v for v in mood_values if v != 0]
+        entry.mood = sum(non_zero_values) / len(non_zero_values) if non_zero_values else 0
+        entry.mood_details = mood_data
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving mood data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/save-tracking', methods=['POST'])
 def save_tracking():
-    from models import TrackingEntry, CommunityStats
-    data = request.json
-
-    # Calculate overall mood average from the detailed mood data
-    mood_data = data['mood']
-    overall_mood = (
-        mood_data.get('morning_mood', 0) +
-        mood_data.get('meal_mood', 0) +
-        mood_data.get('energy_level', 0) +
-        mood_data.get('evening_mood', 0) +
-        mood_data.get('overall_mood', 0)
-    ) / 5.0  # Average of all mood indicators
-
-    # Create new tracking entry with the calculated overall mood
-    entry = TrackingEntry(
-        kit_id=data['kitId'],
-        meals=data['meals'],
-        stool_type=data.get('stool', {}).get('type'),
-        mood=overall_mood,  # Store the averaged mood value
-        mood_details=mood_data,  # Store the detailed mood data
-        date=datetime.now().date()
-    )
-    db.session.add(entry)
-
-    # Update community stats
-    today = datetime.now().date()
-    stats = CommunityStats.query.filter_by(date=today).first()
-
-    if not stats:
-        stats = CommunityStats(date=today)
-        db.session.add(stats)
-
-    # Calculate new averages
-    today_entries = TrackingEntry.query.filter(
-        TrackingEntry.date == today
-    ).all()
-
-    if today_entries:
-        # Calculate mood average
-        total_mood = sum(entry.mood for entry in today_entries if entry.mood)
-        stats.avg_mood = total_mood / len(today_entries)
-        stats.total_participants = len(today_entries)
-
-    db.session.commit()
-    return jsonify({"success": True})
+    #This function is now redundant and can be removed.  The new endpoints handle the individual data points.
+    return jsonify({"success": False, "error": "This endpoint is no longer in use."}), 405
 
 
 @app.route('/admin/login', methods=['GET', 'POST'])

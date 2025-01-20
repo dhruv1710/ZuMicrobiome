@@ -3,11 +3,6 @@ const totalSteps = 3;
 let currentStep = 1;
 
 // Form navigation functions
-function updateProgress() {
-    const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
-    document.getElementById('formProgress').style.width = `${progress}%`;
-}
-
 function showStep(step) {
     if (step < 1 || step > totalSteps) return;
 
@@ -38,7 +33,6 @@ function showStep(step) {
     }
 
     currentStep = step;
-    updateProgress();
 }
 
 function nextStep(currentStepNum) {
@@ -66,9 +60,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Array of preset colors (remove duplicate declaration)
-const stoolColors = ['#8B4513', '#FFD700', '#228B22', '#FF0000', '#FFFFFF', '#000000'];
-
 // Modified loadMenuData function for proper menu rendering
 async function loadMenuData() {
     const kitId = localStorage.getItem('kitId');
@@ -76,8 +67,6 @@ async function loadMenuData() {
         try {
             const response = await fetch(`/get-menu-data?kitId=${kitId}`);
             const data = await response.json();
-
-            console.log("Menu Data Response:", data); // Debug log
 
             if (data.menu_data) {
                 const menuData = data.menu_data;
@@ -152,47 +141,97 @@ function toggleCategory(categoryId) {
     }
 }
 
-// Modified saveTracking function for hierarchical meal data
-function saveTracking() {
-    const getMealData = (mealType) => {
-        const foods = {};
-        const mealSection = document.getElementById(`${mealType}-content`);
-        if (mealSection) {
-            // Get all categories in this meal section
-            const categories = mealSection.getElementsByClassName('meal-category');
-            Array.from(categories).forEach(category => {
-                const categoryName = category.querySelector('.category-header h5').textContent.trim();
-                foods[categoryName] = [];
+// Get meal data helper function
+function getMealData(mealType) {
+    const foods = {};
+    const mealSection = document.getElementById(`${mealType}-content`);
+    if (mealSection) {
+        // Get all categories in this meal section
+        const categories = mealSection.getElementsByClassName('meal-category');
+        Array.from(categories).forEach(category => {
+            const categoryName = category.querySelector('.category-header h5').textContent.trim();
+            foods[categoryName] = [];
 
-                // Get checked items in this category
-                const checkedItems = category.querySelectorAll('input[type="checkbox"]:checked');
-                checkedItems.forEach(item => {
-                    const itemName = item.nextElementSibling.textContent.trim();
-                    foods[categoryName].push(itemName);
-                });
-
-                // Remove empty categories
-                if (foods[categoryName].length === 0) {
-                    delete foods[categoryName];
-                }
+            // Get checked items in this category
+            const checkedItems = category.querySelectorAll('input[type="checkbox"]:checked');
+            checkedItems.forEach(item => {
+                const itemName = item.nextElementSibling.textContent.trim();
+                foods[categoryName].push(itemName);
             });
-        }
-        return foods;
-    };
 
-    const trackingData = {
+            // Remove empty categories
+            if (foods[categoryName].length === 0) {
+                delete foods[categoryName];
+            }
+        });
+    }
+    return foods;
+}
+
+// Async submission functions for each section
+async function saveMealData(mealType) {
+    const mealData = {
         date: new Date().toISOString(),
         kitId: localStorage.getItem('kitId'),
-        meals: {
-            breakfast: getMealData('breakfast'),
-            lunch: getMealData('lunch'),
-            dinner: getMealData('dinner')
-        },
-        stool: {
-            type: document.querySelector('input[name="stoolType"]:checked')?.value,
-            relief: parseInt(document.getElementById('reliefSlider')?.value || 3),
-            smell: parseInt(document.getElementById('smellSlider')?.value || 3)
-        },
+        type: mealType,
+        foods: getMealData(mealType)
+    };
+
+    try {
+        const response = await fetch('/save-meal', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(mealData)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)} data saved successfully!`);
+        } else {
+            alert('Failed to save meal data');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to save meal data');
+    }
+}
+
+async function saveStoolData() {
+    const stoolData = {
+        date: new Date().toISOString(),
+        kitId: localStorage.getItem('kitId'),
+        type: document.querySelector('input[name="stoolType"]:checked')?.value,
+        relief: parseInt(document.getElementById('reliefSlider')?.value || 3),
+        smell: parseInt(document.getElementById('smellSlider')?.value || 3)
+    };
+
+    try {
+        const response = await fetch('/save-stool', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(stoolData)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Stool data saved successfully!');
+        } else {
+            alert('Failed to save stool data');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to save stool data');
+    }
+}
+
+async function saveMoodData() {
+    const moodData = {
+        date: new Date().toISOString(),
+        kitId: localStorage.getItem('kitId'),
         mood: {
             morning_mood: parseInt(document.querySelector('input[name="morning_mood"]:checked')?.value || 0),
             meal_mood: parseInt(document.querySelector('input[name="meal_mood"]:checked')?.value || 0),
@@ -202,49 +241,26 @@ function saveTracking() {
         }
     };
 
-    // Save to database
-    fetch('/save-tracking', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(trackingData)
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = `/insights/${trackingData.kitId}?new_submission=true`;
-            } else {
-                alert('Failed to save data');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to save data');
+    try {
+        const response = await fetch('/save-mood', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(moodData)
         });
-}
 
-// Kit ID validation
-function validateKitId() {
-    const kitId = document.getElementById('kitId').value;
-
-    if (!kitId) {
-        alert('Please enter a Kit ID');
-        return;
+        const result = await response.json();
+        if (result.success) {
+            alert('Mood data saved successfully!');
+        } else {
+            alert('Failed to save mood data');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to save mood data');
     }
-
-    fetch(`/validate-kit/${kitId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.valid) {
-                localStorage.setItem('kitId', kitId);
-                window.location.href = '/track';
-            } else {
-                alert('Invalid Kit ID');
-            }
-        });
 }
-
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -254,11 +270,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Replace Feather icons
     feather.replace();
 
-    // Initialize progress bar if it exists
-    if (document.getElementById('formProgress')) {
-        updateProgress();
-    }
+    // Show all sections initially
+    document.querySelectorAll('.form-step').forEach(step => {
+        step.classList.remove('d-none');
+        step.style.opacity = '1';
+        step.style.transform = 'translateX(0)';
+    });
 });
+
+// Array of preset colors (remove duplicate declaration)
+const stoolColors = ['#8B4513', '#FFD700', '#228B22', '#FF0000', '#FFFFFF', '#000000'];
+
 
 // Initialize charts only if they exist on the page
 document.addEventListener('DOMContentLoaded', function() {

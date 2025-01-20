@@ -4,12 +4,8 @@
 <div class="tracking-container">
     <h2 class="mb-4">Daily Health Tracking</h2>
 
-    <div class="progress mb-4">
-        <div class="progress-bar" role="progressbar" style="width: 0%" id="formProgress"></div>
-    </div>
-
     <form id="trackingForm">
-        <!-- Step 1: Meals -->
+        <!-- Meals Section -->
         <div class="form-step" id="step1">
             <div class="card mb-4">
                 <div class="card-body">
@@ -25,6 +21,9 @@
                             <div class="category-content" id="breakfast-content">
                                 <!-- Menu items will be populated dynamically -->
                             </div>
+                            <button type="button" class="btn btn-primary mt-3" onclick="saveMealData('breakfast')">
+                                Add Breakfast Entry
+                            </button>
                         </div>
 
                         <!-- Lunch Section -->
@@ -37,6 +36,9 @@
                             <div class="category-content" id="lunch-content">
                                 <!-- Menu items will be populated dynamically -->
                             </div>
+                            <button type="button" class="btn btn-primary mt-3" onclick="saveMealData('lunch')">
+                                Add Lunch Entry
+                            </button>
                         </div>
 
                         <!-- Dinner Section -->
@@ -49,15 +51,17 @@
                             <div class="category-content" id="dinner-content">
                                 <!-- Menu items will be populated dynamically -->
                             </div>
+                            <button type="button" class="btn btn-primary mt-3" onclick="saveMealData('dinner')">
+                                Add Dinner Entry
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-            <button type="button" class="btn btn-primary w-100" onclick="nextStep(1)">Next: Stool Tracking</button>
         </div>
 
-        <!-- Step 2: Stool -->
-        <div class="form-step d-none" id="step2">
+        <!-- Stool Section -->
+        <div class="form-step" id="step2">
             <div class="card mb-4">
                 <div class="card-body">
                     <h3 class="card-title">Stool Tracking</h3>
@@ -94,7 +98,7 @@
                             {% endfor %}
                         </div>
 
-                        <!-- New Sense of Relief Slider -->
+                        <!-- Sense of Relief Slider -->
                         <div class="relief-selector p-4">
                             <label class="form-label">Sense of Relief</label>
                             <input type="range" class="form-range" min="1" max="5" step="1" id="reliefSlider" value="3">
@@ -107,7 +111,7 @@
                             </div>
                         </div>
 
-                        <!-- New Smell Intensity Slider -->
+                        <!-- Smell Intensity Slider -->
                         <div class="smell-selector p-4">
                             <label class="form-label">Smell Intensity</label>
                             <input type="range" class="form-range" min="1" max="5" step="1" id="smellSlider" value="3">
@@ -120,16 +124,15 @@
                             </div>
                         </div>
                     </div>
+                    <button type="button" class="btn btn-primary mt-3" onclick="saveStoolData()">
+                        Add Stool Data
+                    </button>
                 </div>
-            </div>
-            <div class="d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" onclick="prevStep(2)">Previous</button>
-                <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next: Mood</button>
             </div>
         </div>
 
-        <!-- Step 3: Mood -->
-        <div class="form-step d-none" id="step3">
+        <!-- Mood Section -->
+        <div class="form-step" id="step3">
             <div class="card mb-4">
                 <div class="card-body">
                     <h3 class="card-title">Daily Mood Tracking</h3>
@@ -205,11 +208,10 @@
                             </div>
                         </div>
                     </div>
+                    <button type="button" class="btn btn-primary mt-3" onclick="saveMoodData()">
+                        Add Mood Data
+                    </button>
                 </div>
-            </div>
-            <div class="d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" onclick="prevStep(3)">Previous</button>
-                <button type="button" class="btn btn-primary" onclick="saveTracking()">Save Entry</button>
             </div>
         </div>
     </form>
