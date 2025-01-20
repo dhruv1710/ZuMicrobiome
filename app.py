@@ -252,11 +252,11 @@ def track_mood():
 def get_menu_data():
     kit_id = request.args.get('kitId')
     meal_type = request.args.get('meal_type')
-    
+
     if not kit_id:
         logging.debug("No kit ID provided in get-menu-data request")
         return jsonify({"error": "No kit ID provided"}), 400
-        
+
     if not meal_type:
         logging.debug("No meal type provided in get-menu-data request")
         return jsonify({"error": "No meal type provided"}), 400
@@ -264,12 +264,33 @@ def get_menu_data():
     logging.debug(f"Fetching menu data for kit ID: {kit_id}")
     kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()
 
+    # If no menu data found, return default menu data
+    default_menu_data = {
+        "breakfast": {
+            "Beverages": {
+                "Coffee": {},
+                "Tea": {},
+                "Water": {}
+            },
+            "Cereals": {
+                "Oatmeal": {},
+                "Granola": {},
+                "Muesli": {}
+            },
+            "Protein": {
+                "Eggs": {},
+                "Greek Yogurt": {},
+                "Tofu Scramble": {}
+            }
+        }
+    }
+
     if kit_code and kit_code.menu_data:
         logging.debug(f"Found menu data for kit ID {kit_id}: {kit_code.menu_data}")
         return jsonify({"menu_data": kit_code.menu_data})
 
-    logging.debug(f"No menu data found for kit ID: {kit_id}")
-    return jsonify({"error": "Invalid kit ID or no menu data available"}), 404
+    logging.debug(f"No menu data found for kit ID: {kit_id}, returning default menu")
+    return jsonify({"menu_data": default_menu_data})
 
 @app.route('/validate-kit/<kit_id>', methods=['GET', 'POST'])
 def validate_kit(kit_id):
