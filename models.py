@@ -1,6 +1,6 @@
 from database import db
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class AnonymousUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,6 +37,61 @@ class TrackingEntry(db.Model):
     mood = db.Column(db.Integer)
     mood_details = db.Column(db.JSON)  # Added mood_details column
     shared_with_community = db.Column(db.Boolean, default=True)
+    # New streak-related columns
+    current_streak = db.Column(db.Integer, default=0)
+    best_streak = db.Column(db.Integer, default=0)
+    last_tracked_date = db.Column(db.DateTime)
+
+    def update_streak(self):
+        """Update the streak count based on tracking consistency"""
+        today = datetime.now().date()
+
+        # If this is the first entry
+        if not self.last_tracked_date:
+            self.current_streak = 1
+            self.best_streak = 1
+            self.last_tracked_date = today
+            return
+
+        last_date = self.last_tracked_date.date()
+        days_diff = (today - last_date).days
+
+        # If tracked today already, don't update streak
+        if days_diff == 0:
+            return
+
+        # If tracked yesterday, increment streak
+        if days_diff == 1:
+            self.current_streak += 1
+            if self.current_streak > self.best_streak:
+                self.best_streak = self.current_streak
+        # If missed a day, reset streak
+        else:
+            self.current_streak = 1
+
+        self.last_tracked_date = today
+
+    @classmethod
+    def get_user_streaks(cls, kit_id):
+        """Get streak information for a user"""
+        latest_entry = cls.query.filter_by(kit_id=kit_id).order_by(cls.date.desc()).first()
+        if not latest_entry:
+            return {
+                'current_streak': 0,
+                'best_streak': 0,
+                'achievement_unlocked': False
+            }
+
+        # Check if new achievement unlocked (streak milestones)
+        achievement_unlocked = False
+        if latest_entry.current_streak in [7, 30, 100]:  # Milestone days
+            achievement_unlocked = True
+
+        return {
+            'current_streak': latest_entry.current_streak,
+            'best_streak': latest_entry.best_streak,
+            'achievement_unlocked': achievement_unlocked
+        }
 
 class CommunityStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)

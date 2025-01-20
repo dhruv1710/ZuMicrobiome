@@ -75,6 +75,16 @@ def dashboard():
     dinner_logged = 'dinner' in meals
     stool_logged = True if entry and entry.stool_type else False
 
+    # Get streak information
+    streak_info = TrackingEntry.get_user_streaks(session['kit_id'])
+    current_streak = streak_info['current_streak']
+    best_streak = streak_info['best_streak']
+    achievement_unlocked = streak_info['achievement_unlocked']
+
+    # Calculate next milestone
+    milestones = [7, 30, 100]
+    next_milestone = next((m for m in milestones if m > current_streak), milestones[-1])
+
     # Calculate group insights
     entries = TrackingEntry.query.filter_by(date=today).all()
 
@@ -120,6 +130,10 @@ def dashboard():
                          lunch_logged=lunch_logged,
                          dinner_logged=dinner_logged,
                          stool_logged=stool_logged,
+                         current_streak=current_streak,
+                         best_streak=best_streak,
+                         next_milestone=next_milestone,
+                         achievement_unlocked=achievement_unlocked,
                          top_breakfast=[item[0] for item in top_meals['breakfast']],
                          top_lunch=[item[0] for item in top_meals['lunch']],
                          top_dinner=[item[0] for item in top_meals['dinner']],
@@ -586,8 +600,6 @@ def get_insights(kit_id):
 def save_tracking():
     #This function is now redundant and can be removed.  The new endpoints handle the individual data points.
     return jsonify({"success": False, "error": "This endpoint is no longer in use."}), 405
-
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

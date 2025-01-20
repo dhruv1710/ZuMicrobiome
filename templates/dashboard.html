@@ -3,7 +3,40 @@
 {% block content %}
 <div class="dashboard-container">
     <h2 class="text-center mb-4">Health Tracking Dashboard</h2>
-    
+
+    <!-- Streak Section -->
+    <div class="streak-section mb-4">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center">
+                        <div class="streak-counter">
+                            <h3>Current Streak</h3>
+                            <div class="streak-number" data-streak="{{ current_streak }}">
+                                {{ current_streak }}
+                            </div>
+                            <p class="streak-label">days</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="streak-stats">
+                            <h4>Best Streak: <span class="best-streak">{{ best_streak }}</span> days</h4>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (current_streak / next_milestone) * 100 }}%"
+                                     aria-valuenow="{{ current_streak }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="{{ next_milestone }}">
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ current_streak }} / {{ next_milestone }} days to next milestone</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <!-- Diet Logging -->
         <div class="col-md-6">
@@ -86,7 +119,7 @@
         <div class="card">
             <div class="card-body">
                 <h3 class="card-title">Group Insights</h3>
-                
+
                 <!-- Scrolling Text for Top Picks -->
                 <div class="scrolling-insights mb-3">
                     <div class="marquee">
@@ -109,12 +142,56 @@
         </div>
     </div>
 </div>
+
+<!-- Achievement Modal -->
+<div class="modal fade" id="achievementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="achievement-animation">
+                    <i class="fas fa-trophy fa-4x text-warning mb-3"></i>
+                    <h3>Achievement Unlocked!</h3>
+                    <p class="achievement-text"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize streak counter animation
+    const streakCounter = document.querySelector('.streak-number');
+    const streak = parseInt(streakCounter.dataset.streak);
+    if (streak > 0) {
+        let count = 0;
+        const duration = 1000; // 1 second
+        const increment = streak / (duration / 16); // 60fps
+
+        const animate = () => {
+            count += increment;
+            if (count > streak) count = streak;
+            streakCounter.textContent = Math.floor(count);
+
+            if (count < streak) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        animate();
+    }
+
+    // Check for achievement unlock
+    {% if achievement_unlocked %}
+    const achievementModal = new bootstrap.Modal(document.getElementById('achievementModal'));
+    const achievementText = document.querySelector('.achievement-text');
+    achievementText.textContent = `You've maintained your health tracking streak for {{ current_streak }} days!`;
+    achievementModal.show();
+    {% endif %}
+
     // Mood Distribution Chart
     new Chart(document.getElementById('moodChart'), {
         type: 'pie',
