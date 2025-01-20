@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tracking-container">
+    <h2 class="mb-4">Digestive Health Tracking</h2>
+
+    <form id="stoolTrackingForm">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Stool Tracking</h3>
+                <div class="stool-types">
+                    <div class="row g-4 mb-4">
+                        {% for i in range(1, 8) %}
+                        <div class="col-md-6">
+                            <div class="stool-type-card">
+                                <input type="radio" class="btn-check" name="stoolType" id="type{{ i }}" value="{{ i }}">
+                                <label class="btn btn-outline-primary w-100" for="type{{ i }}">
+                                    <img src="{{ url_for('static', filename='images/' + i|string + '.png') }}"
+                                         alt="Type {{ i }}" class="img-fluid mb-2">
+                                    <span class="d-block">Type {{ i }}</span>
+                                    <small class="d-block text-muted mt-2">
+                                        {% if i == 1 %}
+                                            Separate hard lumps, like nuts. hard to pass
+                                        {% elif i == 2 %}
+                                            Sausage shaped but lumpy
+                                        {% elif i == 3 %}
+                                            Sausage shaped, but with cracks on surface
+                                        {% elif i == 4 %}
+                                            Sausage- or snake- like, smooth and soft
+                                        {% elif i == 5 %}
+                                            Soft blobs with clear-cut edges (easy to pass)
+                                        {% elif i == 6 %}
+                                            Fluffy pieces with ragged edges, mushy and fluids
+                                        {% elif i == 7 %}
+                                            Watery, no solid pieces (entirely liquid)
+                                        {% endif %}
+                                    </small>
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Sense of Relief Slider -->
+                    <div class="relief-selector p-4">
+                        <label class="form-label">Sense of Relief</label>
+                        <input type="range" class="form-range" min="1" max="5" step="1" id="reliefSlider" value="3">
+                        <div class="relief-labels d-flex justify-content-between mt-2">
+                            <span>😫</span>
+                            <span>😕</span>
+                            <span>😐</span>
+                            <span>😌</span>
+                            <span>😊</span>
+                        </div>
+                    </div>
+
+                    <!-- Smell Intensity Slider -->
+                    <div class="smell-selector p-4">
+                        <label class="form-label">Smell Intensity</label>
+                        <input type="range" class="form-range" min="1" max="5" step="1" id="smellSlider" value="3">
+                        <div class="smell-labels d-flex justify-content-between mt-2">
+                            <span>🌸</span>
+                            <span>😐</span>
+                            <span>🤢</span>
+                            <span>🤮</span>
+                            <span>☠️</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary mt-3" onclick="saveStoolData()">
+                    Add Stool Data
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

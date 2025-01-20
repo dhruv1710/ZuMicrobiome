@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2 class="text-center mb-4">Health Tracking Dashboard</h2>
+    
+    <div class="row g-4">
+        <!-- Diet Logging -->
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-utensils fa-3x mb-3"></i>
+                    <h3>Diet Tracking</h3>
+                    <div class="meal-buttons mt-3">
+                        <button onclick="location.href='/track/meal/breakfast'"
+                                class="btn btn-primary mb-2 w-100" 
+                                {% if breakfast_logged %}disabled{% endif %}>
+                            Breakfast {% if breakfast_logged %}(Logged){% endif %}
+                        </button>
+                        <button onclick="location.href='/track/meal/lunch'"
+                                class="btn btn-primary mb-2 w-100"
+                                {% if lunch_logged %}disabled{% endif %}
+                                {% if not breakfast_logged %}disabled title="Complete breakfast first"{% endif %}>
+                            Lunch {% if lunch_logged %}(Logged){% endif %}
+                        </button>
+                        <button onclick="location.href='/track/meal/dinner'"
+                                class="btn btn-primary w-100"
+                                {% if dinner_logged %}disabled{% endif %}
+                                {% if not lunch_logged %}disabled title="Complete lunch first"{% endif %}>
+                            Dinner {% if dinner_logged %}(Logged){% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stool Logging -->
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                    <h3>Digestive Health</h3>
+                    <button onclick="location.href='/track/stool'"
+                            class="btn btn-primary mt-3 w-100"
+                            {% if not breakfast_logged %}disabled title="Complete breakfast first"{% endif %}
+                            {% if stool_logged %}disabled{% endif %}>
+                        Track Digestive Health
+                        {% if stool_logged %}(Logged){% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mood Logging -->
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-smile fa-3x mb-3"></i>
+                    <h3>Mood Tracking</h3>
+                    <p class="text-muted">Best tracked at end of day</p>
+                    <button onclick="location.href='/track/mood'"
+                            class="btn btn-primary mt-3 w-100">
+                        Track Mood
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-lightbulb fa-3x mb-3"></i>
+                    <h3>Insights</h3>
+                    <button onclick="location.href='/insights'"
+                            class="btn btn-primary mt-3 w-100">
+                        View Insights
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Insights Section -->
+    <div class="group-insights mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Group Insights</h3>
+                
+                <!-- Scrolling Text for Top Picks -->
+                <div class="scrolling-insights mb-3">
+                    <div class="marquee">
+                        <span>Top Breakfast: {{ top_breakfast|join(', ') }} | </span>
+                        <span>Top Lunch: {{ top_lunch|join(', ') }} | </span>
+                        <span>Top Dinner: {{ top_dinner|join(', ') }}</span>
+                    </div>
+                </div>
+
+                <!-- Mood Distribution -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="moodChart"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="resilienceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mood Distribution Chart
+    new Chart(document.getElementById('moodChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Happy', 'Neutral', 'Sad'],
+            datasets: [{
+                data: {{ mood_distribution|tojson }},
+                backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Group Mood Distribution'
+                }
+            }
+        }
+    });
+
+    // Resilience Chart
+    new Chart(document.getElementById('resilienceChart'), {
+        type: 'pie',
+        data: {
+            labels: ['High', 'Medium', 'Low'],
+            datasets: [{
+                data: {{ resilience_distribution|tojson }},
+                backgroundColor: ['#2196F3', '#9C27B0', '#FF9800']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Group Resilience Distribution'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

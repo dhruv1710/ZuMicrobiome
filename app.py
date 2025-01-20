@@ -2,7 +2,7 @@ import os
 import logging
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -53,39 +53,153 @@ with app.app_context():
         db.session.commit()
         logging.info('Default admin account created')
 
+@app.route('/dashboard')
+def dashboard():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
+
+    today = datetime.now().date()
+    current_time = datetime.now().time()
+    reset_time = time(6, 0)  # 6 AM
+
+    # Get today's entry
+    entry = TrackingEntry.query.filter_by(
+        kit_id=session['kit_id'],
+        date=today
+    ).first()
+
+    # Check meal logging status
+    meals = entry.meals if entry else {}
+    breakfast_logged = 'breakfast' in meals
+    lunch_logged = 'lunch' in meals
+    dinner_logged = 'dinner' in meals
+    stool_logged = True if entry and entry.stool_type else False
+
+    # Calculate group insights
+    entries = TrackingEntry.query.filter_by(date=today).all()
+
+    # Get top meals
+    all_meals = {'breakfast': {}, 'lunch': {}, 'dinner': {}}
+    for e in entries:
+        if e.meals:
+            for meal_type, items in e.meals.items():
+                for category, foods in items.items():
+                    for food in foods:
+                        all_meals[meal_type][food] = all_meals[meal_type].get(food, 0) + 1
+
+    top_meals = {
+        'breakfast': sorted(all_meals['breakfast'].items(), key=lambda x: x[1], reverse=True)[:3],
+        'lunch': sorted(all_meals['lunch'].items(), key=lambda x: x[1], reverse=True)[:3],
+        'dinner': sorted(all_meals['dinner'].items(), key=lambda x: x[1], reverse=True)[:3]
+    }
+
+    # Calculate mood distribution
+    total_entries = len(entries)
+    if total_entries > 0:
+        mood_distribution = {
+            'happy': len([e for e in entries if e.mood and e.mood >= 5]) / total_entries * 100,
+            'neutral': len([e for e in entries if e.mood and 3 <= e.mood < 5]) / total_entries * 100,
+            'sad': len([e for e in entries if e.mood and e.mood < 3]) / total_entries * 100
+        }
+
+        # Calculate resilience (based on mood stability throughout the day)
+        resilience_distribution = {
+            'high': len([e for e in entries if e.mood_details and 
+                        max(e.mood_details.values()) - min(e.mood_details.values()) <= 1]) / total_entries * 100,
+            'medium': len([e for e in entries if e.mood_details and 
+                         1 < max(e.mood_details.values()) - min(e.mood_details.values()) <= 2]) / total_entries * 100,
+            'low': len([e for e in entries if e.mood_details and 
+                       max(e.mood_details.values()) - min(e.mood_details.values()) > 2]) / total_entries * 100
+        }
+    else:
+        mood_distribution = {'happy': 0, 'neutral': 0, 'sad': 0}
+        resilience_distribution = {'high': 0, 'medium': 0, 'low': 0}
+
+    return render_template('dashboard.html',
+                         breakfast_logged=breakfast_logged,
+                         lunch_logged=lunch_logged,
+                         dinner_logged=dinner_logged,
+                         stool_logged=stool_logged,
+                         top_breakfast=[item[0] for item in top_meals['breakfast']],
+                         top_lunch=[item[0] for item in top_meals['lunch']],
+                         top_dinner=[item[0] for item in top_meals['dinner']],
+                         mood_distribution=[
+                             mood_distribution['happy'],
+                             mood_distribution['neutral'],
+                             mood_distribution['sad']
+                         ],
+                         resilience_distribution=[
+                             resilience_distribution['high'],
+                             resilience_distribution['medium'],
+                             resilience_distribution['low']
+                         ])
+
 @app.route('/')
 def index():
     if 'kit_id' in session:
-        # Check if user has tracked today
-        today = datetime.now().date()
-        entry = TrackingEntry.query.filter_by(
-            kit_id=session['kit_id'],
-            date=today
-        ).first()
-
-        # If tracked today, show insights
-        if entry:
-            return redirect(url_for('get_insights', kit_id=session['kit_id']))
-
-        # If not tracked today, check if they have previous entries
-        last_entry = TrackingEntry.query.filter_by(
-            kit_id=session['kit_id']
-        ).order_by(TrackingEntry.date.desc()).first()
-
-        if last_entry:
-            # Show insights first, then they can track new entry
-            return redirect(url_for('get_insights', kit_id=session['kit_id']))
-        else:
-            # First time user, go directly to tracking
-            return redirect(url_for('track'))
-
+        return redirect(url_for('dashboard'))
     return render_template('index.html')
 
-@app.route('/track')
-def track():
+@app.route('/track/meal/<meal_type>')
+def track_meal(meal_type):
     if 'kit_id' not in session:
         return redirect(url_for('index'))
-    return render_template('track.html')
+
+    if meal_type not in ['breakfast', 'lunch', 'dinner']:
+        return redirect(url_for('dashboard'))
+
+    # Check if current meal can be logged
+    today = datetime.now().date()
+    entry = TrackingEntry.query.filter_by(
+        kit_id=session['kit_id'],
+        date=today
+    ).first()
+
+    meals = entry.meals if entry else {}
+
+    # Check meal sequence
+    if meal_type == 'lunch' and 'breakfast' not in meals:
+        flash('Please log breakfast first', 'error')
+        return redirect(url_for('dashboard'))
+    elif meal_type == 'dinner' and 'lunch' not in meals:
+        flash('Please log lunch first', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Check if meal already logged
+    if meals and meal_type in meals:
+        flash(f'{meal_type.capitalize()} already logged for today', 'error')
+        return redirect(url_for('dashboard'))
+
+    return render_template('track_meal.html', meal_type=meal_type)
+
+@app.route('/track/stool')
+def track_stool():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
+
+    # Check if breakfast is logged
+    today = datetime.now().date()
+    entry = TrackingEntry.query.filter_by(
+        kit_id=session['kit_id'],
+        date=today
+    ).first()
+
+    if not entry or 'breakfast' not in entry.meals:
+        flash('Please log breakfast first', 'error')
+        return redirect(url_for('dashboard'))
+
+    if entry.stool_type:
+        flash('Stool data already logged for today', 'error')
+        return redirect(url_for('dashboard'))
+
+    return render_template('track_stool.html')
+
+@app.route('/track/mood')
+def track_mood():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
+    return render_template('track_mood.html')
+
 
 @app.route('/get-menu-data')
 def get_menu_data():
@@ -167,7 +281,195 @@ def validate_kit(kit_id):
         logging.error(f"Error during kit validation: {str(e)}")
         return jsonify({"valid": False, "error": "Internal server error"}), 500
 
-@app.route('/insights/<kit_id>')
+@app.route('/save-meal', methods=['POST'])
+def save_meal():
+    data = request.json
+    kit_id = data.get('kitId')
+    meal_type = data.get('type')
+    foods = data.get('foods', {})
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=datetime.now().date(),
+                meals={}
+            )
+            db.session.add(entry)
+
+        # Update only the specific meal
+        if not entry.meals:
+            entry.meals = {}
+        entry.meals[meal_type] = foods
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving meal data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/save-stool', methods=['POST'])
+def save_stool():
+    data = request.json
+    kit_id = data.get('kitId')
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=datetime.now().date()
+            )
+            db.session.add(entry)
+
+        entry.stool_type = data.get('type')
+        entry.stool_details = {
+            'relief': data.get('relief'),
+            'smell': data.get('smell')
+        }
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving stool data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/save-mood', methods=['POST'])
+def save_mood():
+    data = request.json
+    kit_id = data.get('kitId')
+    mood_data = data.get('mood', {})
+
+    try:
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=datetime.now().date()
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=datetime.now().date()
+            )
+            db.session.add(entry)
+
+        # Calculate overall mood average
+        mood_values = [
+            mood_data.get('morning_mood', 0),
+            mood_data.get('meal_mood', 0),
+            mood_data.get('energy_level', 0),
+            mood_data.get('evening_mood', 0),
+            mood_data.get('overall_mood', 0)
+        ]
+        non_zero_values = [v for v in mood_values if v != 0]
+        entry.mood = sum(non_zero_values) / len(non_zero_values) if non_zero_values else 0
+        entry.mood_details = mood_data
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving mood data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        admin = Admin.query.filter_by(username=username).first()
+
+        if admin and check_password_hash(admin.password_hash, password):
+            session['admin_id'] = admin.id
+            flash('Login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
+
+        flash('Invalid credentials', 'error')
+        return redirect(url_for('admin_login'))
+
+    return render_template('admin/login.html')
+
+@app.route('/admin/logout')
+@admin_required
+def admin_logout():
+    session.pop('admin_id', None)
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    kit_codes = KitCode.query.order_by(KitCode.created_at.desc()).all()
+    return render_template('admin/dashboard.html', kit_codes=kit_codes)
+
+@app.route('/admin/import-kit-codes', methods=['POST'])
+@admin_required
+def import_kit_codes():
+    batch_name = request.form.get('batch_name')
+    codes = request.form.get('codes').strip().split('\n')
+    menu_data = request.form.get('menu_data')
+
+    admin_id = session.get('admin_id')
+
+    for code in codes:
+        code = code.strip()
+        if code:
+            kit_code = KitCode(
+                code=code,
+                batch_name=batch_name,
+                menu_data=menu_data,
+                created_by=admin_id
+            )
+            db.session.add(kit_code)
+
+    db.session.commit()
+    flash(f'Successfully imported {len(codes)} kit codes.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/generate-kit-codes', methods=['POST'])
+@admin_required
+def generate_kit_codes():
+    batch_name = request.form.get('batch_name')
+    quantity = int(request.form.get('quantity', 10))
+    menu_data = request.form.get('menu_data')
+
+    admin_id = session.get('admin_id')
+
+    for _ in range(quantity):
+        code = str(uuid.uuid4())
+        kit_code = KitCode(
+            code=code,
+            batch_name=batch_name,
+            menu_data=menu_data,
+            created_by=admin_id
+        )
+        db.session.add(kit_code)
+
+    db.session.commit()
+    flash(f'Successfully generated {quantity} new kit codes.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/toggle-kit-code/<int:code_id>', methods=['POST'])
+@admin_required
+def toggle_kit_code(code_id):
+    kit_code = KitCode.query.get_or_404(code_id)
+    kit_code.is_active = not kit_code.is_active
+    db.session.commit()
+
+    status = 'activated' if kit_code.is_active else 'deactivated'
+    flash(f'Kit code {kit_code.code} has been {status}.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/insights/<kit_id>') # This remains for backward compatibility, but should be deprecated eventually
 def get_insights(kit_id):
     from models import TrackingEntry, CommunityStats
 
@@ -280,200 +582,12 @@ def get_insights(kit_id):
                          has_data=bool(latest_entry),
                          trend_data=trend_data if show_trends else None)
 
-
-@app.route('/save-meal', methods=['POST'])
-def save_meal():
-    data = request.json
-    kit_id = data.get('kitId')
-    meal_type = data.get('type')
-    foods = data.get('foods', {})
-
-    try:
-        entry = TrackingEntry.query.filter_by(
-            kit_id=kit_id,
-            date=datetime.now().date()
-        ).first()
-
-        if not entry:
-            entry = TrackingEntry(
-                kit_id=kit_id,
-                date=datetime.now().date(),
-                meals={}
-            )
-            db.session.add(entry)
-
-        # Update only the specific meal
-        if not entry.meals:
-            entry.meals = {}
-        entry.meals[meal_type] = foods
-
-        db.session.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        logging.error(f"Error saving meal data: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/save-stool', methods=['POST'])
-def save_stool():
-    data = request.json
-    kit_id = data.get('kitId')
-
-    try:
-        entry = TrackingEntry.query.filter_by(
-            kit_id=kit_id,
-            date=datetime.now().date()
-        ).first()
-
-        if not entry:
-            entry = TrackingEntry(
-                kit_id=kit_id,
-                date=datetime.now().date()
-            )
-            db.session.add(entry)
-
-        entry.stool_type = data.get('type')
-        entry.stool_details = {
-            'relief': data.get('relief'),
-            'smell': data.get('smell')
-        }
-
-        db.session.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        logging.error(f"Error saving stool data: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/save-mood', methods=['POST'])
-def save_mood():
-    data = request.json
-    kit_id = data.get('kitId')
-    mood_data = data.get('mood', {})
-
-    try:
-        entry = TrackingEntry.query.filter_by(
-            kit_id=kit_id,
-            date=datetime.now().date()
-        ).first()
-
-        if not entry:
-            entry = TrackingEntry(
-                kit_id=kit_id,
-                date=datetime.now().date()
-            )
-            db.session.add(entry)
-
-        # Calculate overall mood average
-        mood_values = [
-            mood_data.get('morning_mood', 0),
-            mood_data.get('meal_mood', 0),
-            mood_data.get('energy_level', 0),
-            mood_data.get('evening_mood', 0),
-            mood_data.get('overall_mood', 0)
-        ]
-        non_zero_values = [v for v in mood_values if v != 0]
-        entry.mood = sum(non_zero_values) / len(non_zero_values) if non_zero_values else 0
-        entry.mood_details = mood_data
-
-        db.session.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        logging.error(f"Error saving mood data: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
 @app.route('/save-tracking', methods=['POST'])
 def save_tracking():
     #This function is now redundant and can be removed.  The new endpoints handle the individual data points.
     return jsonify({"success": False, "error": "This endpoint is no longer in use."}), 405
 
 
-@app.route('/admin/login', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        admin = Admin.query.filter_by(username=username).first()
-
-        if admin and check_password_hash(admin.password_hash, password):
-            session['admin_id'] = admin.id
-            flash('Login successful!', 'success')
-            return redirect(url_for('admin_dashboard'))
-
-        flash('Invalid credentials', 'error')
-        return redirect(url_for('admin_login'))
-
-    return render_template('admin/login.html')
-
-@app.route('/admin/logout')
-@admin_required
-def admin_logout():
-    session.pop('admin_id', None)
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('admin_login'))
-
-@app.route('/admin/dashboard')
-@admin_required
-def admin_dashboard():
-    kit_codes = KitCode.query.order_by(KitCode.created_at.desc()).all()
-    return render_template('admin/dashboard.html', kit_codes=kit_codes)
-
-@app.route('/admin/import-kit-codes', methods=['POST'])
-@admin_required
-def import_kit_codes():
-    batch_name = request.form.get('batch_name')
-    codes = request.form.get('codes').strip().split('\n')
-    menu_data = request.form.get('menu_data')
-
-    admin_id = session.get('admin_id')
-
-    for code in codes:
-        code = code.strip()
-        if code:
-            kit_code = KitCode(
-                code=code,
-                batch_name=batch_name,
-                menu_data=menu_data,
-                created_by=admin_id
-            )
-            db.session.add(kit_code)
-
-    db.session.commit()
-    flash(f'Successfully imported {len(codes)} kit codes.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/generate-kit-codes', methods=['POST'])
-@admin_required
-def generate_kit_codes():
-    batch_name = request.form.get('batch_name')
-    quantity = int(request.form.get('quantity', 10))
-    menu_data = request.form.get('menu_data')
-
-    admin_id = session.get('admin_id')
-
-    for _ in range(quantity):
-        code = str(uuid.uuid4())
-        kit_code = KitCode(
-            code=code,
-            batch_name=batch_name,
-            menu_data=menu_data,
-            created_by=admin_id
-        )
-        db.session.add(kit_code)
-
-    db.session.commit()
-    flash(f'Successfully generated {quantity} new kit codes.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/toggle-kit-code/<int:code_id>', methods=['POST'])
-@admin_required
-def toggle_kit_code(code_id):
-    kit_code = KitCode.query.get_or_404(code_id)
-    kit_code.is_active = not kit_code.is_active
-    db.session.commit()
-
-    status = 'activated' if kit_code.is_active else 'deactivated'
-    flash(f'Kit code {kit_code.code} has been {status}.', 'success')
-    return redirect(url_for('admin_dashboard'))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
