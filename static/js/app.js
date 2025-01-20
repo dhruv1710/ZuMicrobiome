@@ -69,7 +69,7 @@ async function loadMenuData(meal_type) {
             const data = await response.json();
             console.log('Menu data:', data);
             if (data.menu_data) {
-                const menuData = data.menu_data;
+                const menuData = JSON.parse(data.menu_data);
                 console.log(`meal data: ${menuData[meal_type]}`)
                 // Function to create menu items for a meal type
                 const createMenuItems = (mealType, categories) => {
