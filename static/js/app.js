@@ -231,6 +231,12 @@ async function saveStoolData() {
 }
 
 async function saveMoodData() {
+    // Check if mood was already submitted today
+    if (localStorage.getItem('moodSubmittedDate') === new Date().toISOString().split('T')[0]) {
+        alert('Mood already submitted for today');
+        return;
+    }
+
     const moodData = {
         date: new Date().toISOString(),
         kitId: localStorage.getItem('kitId'),
@@ -254,6 +260,8 @@ async function saveMoodData() {
 
         const result = await response.json();
         if (result.success) {
+            // Store submission date
+            localStorage.setItem('moodSubmittedDate', new Date().toISOString().split('T')[0]);
             alert('Mood data saved successfully!');
             window.location.href = '/';
         } else {
