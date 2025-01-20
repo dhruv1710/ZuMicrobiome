@@ -38,7 +38,7 @@ db.init_app(app)
 
 # Import models after db initialization to avoid circular imports
 with app.app_context():
-    from models import Admin, AnonymousUser, KitCode, TrackingEntry, CommunityStats
+    from models import Admin, AnonymousUser, KitCode, TrackingEntry
     db.create_all()
 
     # Create default admin account if it doesn't exist

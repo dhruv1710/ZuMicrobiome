@@ -70,13 +70,15 @@ async function loadMenuData(meal_type) {
             console.log('Menu data:', data);
             if (data.menu_data) {
                 const menuData = data.menu_data;
-
+                console.log(`meal data: ${menuData[meal_type]}`)
                 // Function to create menu items for a meal type
                 const createMenuItems = (mealType, categories) => {
                     const mealSection = document.getElementById(`${mealType}-content`);
+                    console.log(`meal section: ${mealSection}`)
+                    console.log(`categories: ${categories}`)
                     if (mealSection) {
                         mealSection.innerHTML = ''; // Clear existing content
-
+                        
                         // Create categories
                         Object.entries(categories).forEach(([category, items]) => {
                             const categoryDiv = document.createElement('div');
@@ -114,7 +116,7 @@ async function loadMenuData(meal_type) {
                 };
 
                 // Create menu sections for each meal type
-                ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+                [meal_type].forEach(mealType => {
                     if (menuData[mealType]) {
                         createMenuItems(mealType, menuData[mealType]);
                     }
