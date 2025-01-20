@@ -483,7 +483,8 @@ def toggle_kit_code(code_id):
     flash(f'Kit code {kit_code.code} has been {status}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/insights/<kit_id>') # This remains for backward compatibility, but should be deprecated eventually
+# This remains for backward compatibility, but should be deprecated eventually
+@app.route('/insights/<kit_id>') 
 def get_insights(kit_id):
     from models import TrackingEntry, CommunityStats
 
@@ -600,6 +601,55 @@ def get_insights(kit_id):
 def save_tracking():
     #This function is now redundant and can be removed.  The new endpoints handle the individual data points.
     return jsonify({"success": False, "error": "This endpoint is no longer in use."}), 405
+
+@app.route('/insights')
+def insights():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
+
+    # Get date range (last 7 days)
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=7)
+
+    # Fetch entries for the last 7 days
+    entries = TrackingEntry.query.filter(
+        TrackingEntry.kit_id == session['kit_id'],
+        TrackingEntry.date >= start_date,
+        TrackingEntry.date <= end_date
+    ).order_by(TrackingEntry.date).all()
+
+    if not entries:
+        return render_template('insights.html', has_data=False)
+
+    # Prepare trend data
+    trend_data = {
+        'dates': [],
+        'moods': [],
+        'stool_types': [],
+        'breakfast_counts': [],
+        'lunch_counts': [],
+        'dinner_counts': []
+    }
+
+    for entry in entries:
+        date_str = entry.date.strftime('%Y-%m-%d')
+        trend_data['dates'].append(date_str)
+        trend_data['moods'].append(entry.mood if entry.mood else 0)
+        trend_data['stool_types'].append(int(entry.stool_type) if entry.stool_type else 0)
+
+        # Count items in each meal
+        meals = entry.meals or {}
+        breakfast_items = sum(len(items) for category in meals.get('breakfast', {}).values() for items in (category if isinstance(category, list) else [category.keys()]))
+        lunch_items = sum(len(items) for category in meals.get('lunch', {}).values() for items in (category if isinstance(category, list) else [category.keys()]))
+        dinner_items = sum(len(items) for category in meals.get('dinner', {}).values() for items in (category if isinstance(category, list) else [category.keys()]))
+
+        trend_data['breakfast_counts'].append(breakfast_items)
+        trend_data['lunch_counts'].append(lunch_items)
+        trend_data['dinner_counts'].append(dinner_items)
+
+    return render_template('insights.html', 
+                         has_data=True,
+                         trend_data=trend_data)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

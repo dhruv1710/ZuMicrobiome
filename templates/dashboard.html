@@ -113,34 +113,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Group Insights Section -->
-    <div class="group-insights mt-4">
-        <div class="card">
-            <div class="card-body">
-                <h3 class="card-title">Group Insights</h3>
-
-                <!-- Scrolling Text for Top Picks -->
-                <div class="scrolling-insights mb-3">
-                    <div class="marquee">
-                        <span>Top Breakfast: {{ top_breakfast|join(', ') }} | </span>
-                        <span>Top Lunch: {{ top_lunch|join(', ') }} | </span>
-                        <span>Top Dinner: {{ top_dinner|join(', ') }}</span>
-                    </div>
-                </div>
-
-                <!-- Mood Distribution -->
-                <div class="row">
-                    <div class="col-md-6">
-                        <canvas id="moodChart"></canvas>
-                    </div>
-                    <div class="col-md-6">
-                        <canvas id="resilienceChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Achievement Modal -->
@@ -160,7 +132,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize streak counter animation
@@ -191,48 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
     achievementText.textContent = `You've maintained your health tracking streak for {{ current_streak }} days!`;
     achievementModal.show();
     {% endif %}
-
-    // Mood Distribution Chart
-    new Chart(document.getElementById('moodChart'), {
-        type: 'pie',
-        data: {
-            labels: ['Happy', 'Neutral', 'Sad'],
-            datasets: [{
-                data: {{ mood_distribution|tojson }},
-                backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Group Mood Distribution'
-                }
-            }
-        }
-    });
-
-    // Resilience Chart
-    new Chart(document.getElementById('resilienceChart'), {
-        type: 'pie',
-        data: {
-            labels: ['High', 'Medium', 'Low'],
-            datasets: [{
-                data: {{ resilience_distribution|tojson }},
-                backgroundColor: ['#2196F3', '#9C27B0', '#FF9800']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Group Resilience Distribution'
-                }
-            }
-        }
-    });
 });
 </script>
 {% endblock %}

@@ -3,70 +3,47 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Daily Wellness Insights</h2>
+                    <h2 class="card-title text-center mb-4">Health Insights</h2>
 
                     {% if not has_data %}
                     <div class="alert alert-info">
-                        <p class="mb-0">No tracking data available for today. Start tracking your health to receive personalized insights!</p>
+                        <p class="mb-0">No tracking data available. Start tracking your health to see your insights!</p>
                     </div>
                     {% else %}
 
-                    <!-- Mood Summary -->
+                    <!-- Mood Trend Graph -->
                     <div class="insight-section mb-4">
-                        <h3 class="h5 mb-3">🎭 Mood Check</h3>
-                        <div class="insight-content">
-                            <p>{{ insights.mood_summary }}</p>
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="h5 mb-3">Mood Trends</h3>
+                                <canvas id="moodTrend"></canvas>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Stool Health -->
+                    <!-- Stool Health Graph -->
                     <div class="insight-section mb-4">
-                        <h3 class="h5 mb-3">💪 Digestive Health</h3>
-                        <div class="insight-content">
-                            <p>{{ insights.stool_health }}</p>
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="h5 mb-3">Digestive Health Pattern</h3>
+                                <canvas id="stoolTrend"></canvas>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Community Comparison -->
-                    {% if insights.community_comparison %}
-                    <div class="insight-section mb-4">
-                        <h3 class="h5 mb-3">👥 Community Insights</h3>
-                        <div class="insight-content">
-                            <p>Your mood today is <strong>{{ insights.community_comparison.mood_comparison }}</strong> compared to the community average of {{ insights.community_comparison.community_avg_mood }}.</p>
-                            <p class="text-muted"><small>Based on data from {{ insights.community_comparison.total_participants }} community members today.</small></p>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Meal Patterns -->
+                    <!-- Diet Pattern Graph -->
                     <div class="insight-section">
-                        <h3 class="h5 mb-3">🍽️ Meal Summary</h3>
-                        <div class="insight-content">
-                            {% if insights.meal_patterns %}
-                            <ul class="list-unstyled">
-                                {% for meal in insights.meal_patterns %}
-                                <li class="mb-2">{{ meal }}</li>
-                                {% endfor %}
-                            </ul>
-                            {% else %}
-                            <p>No meal data recorded today.</p>
-                            {% endif %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="h5 mb-3">Meal Pattern Analysis</h3>
+                                <canvas id="mealTrend"></canvas>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Health Trends (only shown after new submission) -->
-                    {% if trend_data %}
-                    <div class="insight-section mt-4">
-                        <h3 class="h5 mb-3">📈 Weekly Health Trends</h3>
-                        <div class="insight-content">
-                            <canvas id="moodTrend" class="mb-4"></canvas>
-                            <canvas id="stoolTrend"></canvas>
-                        </div>
-                    </div>
-                    {% endif %}
                     {% endif %}
 
                     <div class="text-center mt-4">
@@ -82,7 +59,7 @@
 {% endblock %}
 
 {% block scripts %}
-{% if trend_data %}
+{% if has_data %}
 <script>
     // Mood trend chart
     const moodCtx = document.getElementById('moodTrend').getContext('2d');
@@ -114,12 +91,6 @@
                         }
                     }
                 }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Weekly Mood Pattern'
-                }
             }
         }
     });
@@ -150,49 +121,73 @@
                         stepSize: 1
                     }
                 }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Weekly Stool Pattern'
+            }
+        }
+    });
+
+    // Meal trend chart
+    const mealCtx = document.getElementById('mealTrend').getContext('2d');
+    new Chart(mealCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ trend_data.dates|tojson }},
+            datasets: [
+                {
+                    label: 'Breakfast',
+                    data: {{ trend_data.breakfast_counts|tojson }},
+                    backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Lunch',
+                    data: {{ trend_data.lunch_counts|tojson }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Dinner',
+                    data: {{ trend_data.dinner_counts|tojson }},
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Items'
+                    }
                 }
             }
         }
     });
 </script>
-{% endif %}
 
 <script>
 async function exportData() {
-    const kitId = localStorage.getItem('kitId');
-    if (!kitId) {
-        alert('Please log in first');
-        return;
-    }
-
     try {
-        const response = await fetch(`/export-data/${kitId}`, {
+        const response = await fetch('/export-data', {
             method: 'POST'
         });
         const data = await response.json();
 
-        if (data.encrypted_data) {
-            // Create a Blob with the encrypted data
-            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        if (data.success) {
+            const blob = new Blob([JSON.stringify(data.data)], { type: 'application/json' });
             const url = window.URL.createObjectURL(blob);
-
-            // Create a download link
             const a = document.createElement('a');
             a.href = url;
             a.download = `health_data_${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(a);
             a.click();
-
-            // Cleanup
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-
-            alert('Data exported successfully! Please keep the encryption key safe.');
         } else {
             alert('Failed to export data');
         }
@@ -202,4 +197,5 @@ async function exportData() {
     }
 }
 </script>
+{% endif %}
 {% endblock %}
