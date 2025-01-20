@@ -25,12 +25,16 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Include the tracking.js file -->
+<script src="{{ url_for('static', filename='js/tracking.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Store kit_id in localStorage for JavaScript functions
+    localStorage.setItem('kitId', '{{ session.kit_id }}');
+
     // Load menu data
-    console.log('{{ meal_type }}')
     loadMenuData('{{ meal_type }}');
-    
+
     // Replace Feather icons
     feather.replace();
 });
