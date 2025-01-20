@@ -92,8 +92,9 @@
                     <h3>Mood Tracking</h3>
                     <p class="text-muted">Best tracked at end of day</p>
                     <button onclick="location.href='/track/mood'"
-                            class="btn btn-primary mt-3 w-100">
-                        Track Mood
+                            class="btn btn-primary mt-3 w-100"
+                            {% if mood_logged %}disabled{% endif %}>
+                        Track Mood {% if mood_logged %}(Logged){% endif %}
                     </button>
                 </div>
             </div>

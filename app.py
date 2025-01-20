@@ -104,6 +104,7 @@ def dashboard():
     dinner_logged = 'dinner' in meals
     stool_logged = True if entry and entry.stool_type else False
     lifestyle_logged = True if entry and entry.lifestyle_log else False
+    mood_logged = True if entry and entry.mood else False
 
     # Get streak information
     streak_info = TrackingEntry.get_user_streaks(session['kit_id'])
@@ -156,6 +157,7 @@ def dashboard():
         resilience_distribution = {'high': 0, 'medium': 0, 'low': 0}
 
     return render_template('dashboard.html',
+                           mood_logged=mood_logged,
                          breakfast_logged=breakfast_logged,
                          lunch_logged=lunch_logged,
                          dinner_logged=dinner_logged,
