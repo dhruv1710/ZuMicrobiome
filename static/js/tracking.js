@@ -72,6 +72,11 @@ async function loadMenuData(mealType) {
 // Save meal data
 async function saveMealData(mealType) {
     const contentDiv = document.getElementById(`${mealType}-content`);
+    if (!contentDiv) {
+        console.error('Content div not found');
+        return;
+    }
+
     const selectedFoods = {};
 
     // Get all categories
@@ -86,11 +91,21 @@ async function saveMealData(mealType) {
         }
     });
 
+    // Validate if any foods were selected
+    if (Object.keys(selectedFoods).length === 0) {
+        alert('Please select at least one food item');
+        return;
+    }
+
     try {
         const kitId = localStorage.getItem('kitId');
-        const submitButton = document.querySelector(`button[onclick="saveMealData('${mealType}')"]`);
+        if (!kitId) {
+            console.error('Kit ID not found');
+            return;
+        }
 
-        // Disable button during submission
+        // Disable the submit button and show loading state
+        const submitButton = document.querySelector(`button[onclick="saveMealData('${mealType}')"]`);
         if (submitButton) {
             submitButton.disabled = true;
             submitButton.textContent = 'Saving...';
@@ -111,8 +126,8 @@ async function saveMealData(mealType) {
         const data = await response.json();
 
         if (data.success) {
-            // Force a complete page reload to ensure all states are refreshed
-            window.location.reload();
+            // Redirect to dashboard to ensure proper state update
+            window.location.href = '/dashboard';
         } else {
             console.error('Failed to save meal data:', data.error);
             alert(data.error || 'Failed to save meal data');
