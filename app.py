@@ -692,5 +692,45 @@ def insights():
                          has_data=True,
                          trend_data=trend_data)
 
+@app.route('/test-reset')
+def test_reset():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
+
+    current_time = datetime.now().time()
+    reset_time = time(3, 0)
+    current_date = datetime.now().date()
+
+    # If before reset time, use previous day
+    if current_time < reset_time:
+        current_date = current_date - timedelta(days=1)
+
+    # Check if it's a new day (after reset, before noon)
+    is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
+    # Get today's entry
+    entry = TrackingEntry.query.filter_by(
+        kit_id=session['kit_id'],
+        date=current_date
+    ).first()
+
+    # Get tracking status
+    meals = entry.meals if entry else {}
+    tracking_status = {
+        'current_time': current_time.strftime('%H:%M:%S'),
+        'reset_time': reset_time.strftime('%H:%M:%S'),
+        'current_date': current_date.strftime('%Y-%m-%d'),
+        'is_new_day': is_new_day,
+        'breakfast_logged': 'breakfast' in meals if not is_new_day else False,
+        'lunch_logged': 'lunch' in meals if not is_new_day else False,
+        'dinner_logged': 'dinner' in meals if not is_new_day else False,
+        'stool_logged': bool(entry and entry.stool_type and not is_new_day),
+        'mood_logged': bool(entry and entry.mood and not is_new_day),
+        'lifestyle_logged': bool(entry and entry.lifestyle_log and not is_new_day)
+    }
+
+    return jsonify(tracking_status)
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

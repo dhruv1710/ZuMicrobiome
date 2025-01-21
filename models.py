@@ -1,6 +1,6 @@
 from database import db
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 class AnonymousUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,6 +44,12 @@ class TrackingEntry(db.Model):
 
     def update_streak(self):
         today = datetime.now().date()
+        current_time = datetime.now().time()
+        reset_time = time(3, 0)  # 3 AM reset time
+
+        # If it's before reset time, consider it as previous day
+        if current_time < reset_time:
+            today = today - timedelta(days=1)
 
         if not self.last_tracked_date:
             self.current_streak = 1
@@ -55,19 +61,30 @@ class TrackingEntry(db.Model):
         days_diff = (today - last_date).days
 
         if days_diff == 0:
+            # Same day, no streak update needed
             return
-
-        if days_diff == 1:
+        elif days_diff == 1:
+            # Consecutive day
             self.current_streak += 1
             if self.current_streak > self.best_streak:
                 self.best_streak = self.current_streak
         else:
+            # Streak broken
             self.current_streak = 1
 
         self.last_tracked_date = today
 
     @classmethod
     def get_user_streaks(cls, kit_id):
+        # Get the current time and determine if we're before reset time
+        current_time = datetime.now().time()
+        reset_time = time(3, 0)
+
+        # If before reset time, use yesterday's date for checking
+        check_date = datetime.now().date()
+        if current_time < reset_time:
+            check_date = check_date - timedelta(days=1)
+
         latest_entry = cls.query.filter_by(kit_id=kit_id).order_by(cls.date.desc()).first()
         if not latest_entry:
             return {
@@ -76,9 +93,14 @@ class TrackingEntry(db.Model):
                 'achievement_unlocked': False
             }
 
-        achievement_unlocked = False
-        if latest_entry.current_streak in [7, 30, 100]:  
-            achievement_unlocked = True
+        # Check if latest entry is from check_date
+        if latest_entry.date.date() < check_date:
+            # User hasn't tracked today yet, but might still be within the streak window
+            days_missed = (check_date - latest_entry.date.date()).days
+            if days_missed > 1:
+                latest_entry.current_streak = 0
+
+        achievement_unlocked = latest_entry.current_streak in [7, 30, 100]
 
         return {
             'current_streak': latest_entry.current_streak,
