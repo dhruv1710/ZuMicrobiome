@@ -92,10 +92,6 @@ async function saveMealData(mealType) {
     });
 
     // Validate if any foods were selected
-    if (Object.keys(selectedFoods).length === 0) {
-        alert('Please select at least one food item');
-        return;
-    }
 
     try {
         const kitId = localStorage.getItem('kitId');
@@ -111,6 +107,7 @@ async function saveMealData(mealType) {
             submitButton.textContent = 'Saving...';
         }
 
+        
         const response = await fetch('/save-meal', {
             method: 'POST',
             headers: {
@@ -124,6 +121,8 @@ async function saveMealData(mealType) {
         });
 
         const data = await response.json();
+
+        console.log({data})
 
         if (data.success) {
             // Redirect to dashboard to ensure proper state update
