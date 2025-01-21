@@ -122,11 +122,13 @@ def save_meal():
         # For breakfast during new day, always allow and save
         if meal_type == 'breakfast' and is_new_day:
             entry.meals[meal_type] = foods
-        # For other meals, check sequence
+        # For other meals, check sequence and existing entries
+        elif meal_type in entry.meals:
+            return jsonify({"success": False, "error": f"{meal_type.capitalize()} already logged for today"}), 400
         elif meal_type == 'lunch' and 'breakfast' not in entry.meals:
             return jsonify({"success": False, "error": "Please log breakfast first"}), 400
-        elif meal_type == 'dinner' and 'lunch' not in entry.meals:
-            return jsonify({"success": False, "error": "Please log lunch first"}), 400
+        elif meal_type == 'dinner' and ('breakfast' not in entry.meals or 'lunch' not in entry.meals):
+            return jsonify({"success": False, "error": "Please log breakfast and lunch first"}), 400
         else:
             entry.meals[meal_type] = foods
 
@@ -192,6 +194,39 @@ def save_stool():
     except Exception as e:
         logging.error(f"Error saving stool data: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/track/stool')
+def track_stool():
+    if 'kit_id' not in session:
+        return redirect(url_for('index'))
+
+    today = datetime.now().date()
+    current_time = datetime.now().time()
+    reset_time = time(3, 0)  # 3 AM reset time
+
+    # If it's before reset time, we should look at yesterday's entry
+    if current_time < reset_time:
+        today = today - timedelta(days=1)
+
+    # Get today's entry
+    entry = TrackingEntry.query.filter_by(
+        kit_id=session['kit_id'],
+        date=today
+    ).first()
+
+    # If it's after reset time but before noon, treat as new day
+    is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
+    # During new day, don't require breakfast and allow new stool entry
+    if is_new_day:
+        return render_template('track_stool.html')
+
+    # Check if breakfast is logged
+    if not entry or 'breakfast' not in (entry.meals or {}):
+        flash('Please log breakfast first', 'error')
+        return redirect(url_for('dashboard'))
+
+    return render_template('track_stool.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -300,43 +335,6 @@ def track_meal(meal_type):
             return redirect(url_for('dashboard'))
 
     return render_template('track_meal.html', meal_type=meal_type)
-
-@app.route('/track/stool')
-def track_stool():
-    if 'kit_id' not in session:
-        return redirect(url_for('index'))
-
-    today = datetime.now().date()
-    current_time = datetime.now().time()
-    reset_time = time(3, 0)  # 3 AM reset time
-
-    # If it's before reset time, we should look at yesterday's entry
-    if current_time < reset_time:
-        today = today - timedelta(days=1)
-
-    # Get today's entry
-    entry = TrackingEntry.query.filter_by(
-        kit_id=session['kit_id'],
-        date=today
-    ).first()
-
-    # If it's after reset time but before noon, treat as new day
-    is_new_day = current_time >= reset_time and current_time <= time(12, 0)
-
-    # During new day, don't require breakfast and allow new stool entry
-    if is_new_day:
-        return render_template('track_stool.html')
-
-    # Otherwise check if breakfast is logged and if stool is already tracked
-    if not entry or 'breakfast' not in (entry.meals or {}):
-        flash('Please log breakfast first', 'error')
-        return redirect(url_for('dashboard'))
-
-    if entry and entry.stool_entries:
-        flash('Stool data already logged for today', 'error')
-        return redirect(url_for('dashboard'))
-
-    return render_template('track_stool.html')
 
 @app.route('/track/mood')
 def track_mood():

@@ -75,10 +75,9 @@
                     <h3>Digestive Health</h3>
                     <button onclick="location.href='/track/stool'"
                             class="btn btn-primary mt-3 w-100"
-                            {% if not breakfast_logged %}disabled title="Complete breakfast first"{% endif %}
-                            {% if stool_logged %}disabled{% endif %}>
+                            {% if not breakfast_logged %}disabled title="Complete breakfast first"{% endif %}>
                         Track Digestive Health
-                        {% if stool_logged %}(Logged){% endif %}
+                        {% if stool_logged %}(Logged Today){% endif %}
                     </button>
                 </div>
             </div>
@@ -113,6 +112,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Lifestyle Log -->
         <div class="col-md-6">
             <div class="card dashboard-card">

@@ -88,7 +88,7 @@ async function saveMealData(mealType) {
 
     try {
         const kitId = localStorage.getItem('kitId');
-        const submitButton = document.querySelector('button[onclick="saveMealData(\'' + mealType + '\')"]');
+        const submitButton = document.querySelector(`button[onclick="saveMealData('${mealType}')"]`);
 
         // Disable button during submission
         if (submitButton) {
@@ -112,7 +112,7 @@ async function saveMealData(mealType) {
 
         if (data.success) {
             // Force a complete page reload to ensure all states are refreshed
-            window.location.href = '/dashboard';
+            window.location.reload();
         } else {
             console.error('Failed to save meal data:', data.error);
             alert(data.error || 'Failed to save meal data');
@@ -128,7 +128,7 @@ async function saveMealData(mealType) {
         alert('Failed to save meal data');
 
         // Re-enable button on error
-        const submitButton = document.querySelector('button[onclick="saveMealData(\'' + mealType + '\')"]');
+        const submitButton = document.querySelector(`button[onclick="saveMealData('${mealType}')"]`);
         if (submitButton) {
             submitButton.disabled = false;
             submitButton.textContent = `Add ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Entry`;
