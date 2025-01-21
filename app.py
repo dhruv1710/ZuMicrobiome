@@ -107,9 +107,11 @@ def dashboard():
 
     # Check meal logging status
     meals = entry.meals if entry else {}
-    breakfast_logged = 'breakfast' in meals if not is_new_day else False
-    lunch_logged = 'lunch' in meals if not is_new_day else False
-    dinner_logged = 'dinner' in meals if not is_new_day else False
+
+    # During new day (after reset time and before noon), only reset unlogged meals
+    breakfast_logged = 'breakfast' in meals
+    lunch_logged = 'lunch' in meals if not is_new_day or breakfast_logged else False
+    dinner_logged = 'dinner' in meals if not is_new_day or lunch_logged else False
     stool_logged = True if entry and entry.stool_type and not is_new_day else False
     lifestyle_logged = True if entry and entry.lifestyle_log and not is_new_day else False
     mood_logged = True if entry and entry.mood and not is_new_day else False
@@ -344,23 +346,47 @@ def save_meal():
     foods = data.get('foods', {})
 
     try:
+        today = datetime.now().date()
+        current_time = datetime.now().time()
+        reset_time = time(3, 0)  # 3 AM reset time
+
+        # If it's before reset time, we should look at yesterday's entry
+        if current_time < reset_time:
+            today = today - timedelta(days=1)
+
+        # Check if this is breakfast during new day period
+        is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
         entry = TrackingEntry.query.filter_by(
             kit_id=kit_id,
-            date=datetime.now().date()
+            date=today
         ).first()
 
         if not entry:
             entry = TrackingEntry(
                 kit_id=kit_id,
-                date=datetime.now().date(),
+                date=today,
                 meals={}
             )
             db.session.add(entry)
 
-        # Update only the specific meal
+        # Initialize meals if None
         if not entry.meals:
             entry.meals = {}
-        entry.meals[meal_type] = foods
+
+        # For breakfast during new day, always allow and save
+        if meal_type == 'breakfast' and is_new_day:
+            entry.meals[meal_type] = foods
+        # For other meals, check sequence
+        elif meal_type == 'lunch' and 'breakfast' not in entry.meals:
+            return jsonify({"success": False, "error": "Please log breakfast first"}), 400
+        elif meal_type == 'dinner' and 'lunch' not in entry.meals:
+            return jsonify({"success": False, "error": "Please log lunch first"}), 400
+        else:
+            entry.meals[meal_type] = foods
+
+        # Update streak
+        entry.update_streak()
 
         db.session.commit()
         return jsonify({"success": True})

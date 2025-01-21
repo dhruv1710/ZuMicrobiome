@@ -88,6 +88,14 @@ async function saveMealData(mealType) {
 
     try {
         const kitId = localStorage.getItem('kitId');
+        const submitButton = document.querySelector('button[onclick="saveMealData(\'' + mealType + '\')"]');
+
+        // Disable button during submission
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
+        }
+
         const response = await fetch('/save-meal', {
             method: 'POST',
             headers: {
@@ -101,13 +109,29 @@ async function saveMealData(mealType) {
         });
 
         const data = await response.json();
+
         if (data.success) {
+            // Force a complete page reload to ensure all states are refreshed
             window.location.href = '/dashboard';
         } else {
-            alert('Failed to save meal data');
+            console.error('Failed to save meal data:', data.error);
+            alert(data.error || 'Failed to save meal data');
+
+            // Re-enable button on error
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = `Add ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Entry`;
+            }
         }
     } catch (error) {
         console.error('Error saving meal data:', error);
         alert('Failed to save meal data');
+
+        // Re-enable button on error
+        const submitButton = document.querySelector('button[onclick="saveMealData(\'' + mealType + '\')"]');
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = `Add ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Entry`;
+        }
     }
 }
