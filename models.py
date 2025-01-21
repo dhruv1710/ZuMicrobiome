@@ -33,7 +33,7 @@ class TrackingEntry(db.Model):
     kit_id = db.Column(db.String(36), nullable=False)
     date = db.Column(db.DateTime, server_default=db.func.now())
     meals = db.Column(db.JSON)
-    stool_type = db.Column(db.String(10))
+    stool_entries = db.Column(db.JSON)  # Changed from stool_type to stool_entries to store multiple entries
     mood = db.Column(db.Integer)
     mood_details = db.Column(db.JSON)
     shared_with_community = db.Column(db.Boolean, default=True)

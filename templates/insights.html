@@ -45,8 +45,7 @@
                     </div>
 
                     {% endif %}
-                        <a href="/" class="btn btn-secondary">Back to Home</a>
-                    </div>
+                    <a href="/" class="btn btn-secondary">Back to Home</a>
                 </div>
             </div>
         </div>
@@ -91,7 +90,7 @@
         }
     });
 
-    // Stool trend chart
+    // Stool trend chart - Updated for multiple entries
     const stoolCtx = document.getElementById('stoolTrend').getContext('2d');
     new Chart(stoolCtx, {
         type: 'line',
@@ -115,6 +114,21 @@
                     max: 7,
                     ticks: {
                         stepSize: 1
+                    }
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        const entry = {{ trend_data.stool_entries|tojson }}[tooltipItem.index];
+                        if (entry && entry.details) {
+                            return [
+                                `Type: ${tooltipItem.value}`,
+                                `Relief: ${entry.details.relief}`,
+                                `Smell: ${entry.details.smell}`
+                            ];
+                        }
+                        return `Type: ${tooltipItem.value}`;
                     }
                 }
             }
@@ -164,34 +178,6 @@
             }
         }
     });
-</script>
-
-<script>
-async function exportData() {
-    try {
-        const response = await fetch('/export-data', {
-            method: 'POST'
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            const blob = new Blob([JSON.stringify(data.data)], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `health_data_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } else {
-            alert('Failed to export data');
-        }
-    } catch (error) {
-        console.error('Error exporting data:', error);
-        alert('Failed to export data');
-    }
-}
 </script>
 {% endif %}
 {% endblock %}

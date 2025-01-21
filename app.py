@@ -82,6 +82,117 @@ def save_lifestyle():
         logging.error(f"Error saving lifestyle data: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/save-meal', methods=['POST'])
+def save_meal():
+    data = request.json
+    kit_id = data.get('kitId')
+    meal_type = data.get('type')
+    foods = data.get('foods', {})
+
+    try:
+        today = datetime.now().date()
+        current_time = datetime.now().time()
+        reset_time = time(3, 0)  # 3 AM reset time
+
+        # If it's before reset time, we should look at yesterday's entry
+        if current_time < reset_time:
+            today = today - timedelta(days=1)
+
+        # Check if this is breakfast during new day period
+        is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=today
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=today,
+                meals={},
+                stool_entries=[]  # Initialize empty list for stool entries
+            )
+            db.session.add(entry)
+
+        # Initialize meals if None
+        if not entry.meals:
+            entry.meals = {}
+
+        # For breakfast during new day, always allow and save
+        if meal_type == 'breakfast' and is_new_day:
+            entry.meals[meal_type] = foods
+        # For other meals, check sequence
+        elif meal_type == 'lunch' and 'breakfast' not in entry.meals:
+            return jsonify({"success": False, "error": "Please log breakfast first"}), 400
+        elif meal_type == 'dinner' and 'lunch' not in entry.meals:
+            return jsonify({"success": False, "error": "Please log lunch first"}), 400
+        else:
+            entry.meals[meal_type] = foods
+
+        # Update streak
+        entry.update_streak()
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving meal data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/save-stool', methods=['POST'])
+def save_stool():
+    data = request.json
+    kit_id = data.get('kitId')
+
+    try:
+        today = datetime.now().date()
+        current_time = datetime.now().time()
+        reset_time = time(3, 0)  # 3 AM reset time
+
+        # If it's before reset time, we should look at yesterday's entry
+        if current_time < reset_time:
+            today = today - timedelta(days=1)
+
+        # Get today's entry
+        entry = TrackingEntry.query.filter_by(
+            kit_id=kit_id,
+            date=today
+        ).first()
+
+        if not entry:
+            entry = TrackingEntry(
+                kit_id=kit_id,
+                date=today,
+                stool_entries=[]  # Initialize empty list for stool entries
+            )
+            db.session.add(entry)
+
+        # Initialize stool_entries if None
+        if entry.stool_entries is None:
+            entry.stool_entries = []
+
+        # Create new stool entry with timestamp
+        new_stool_entry = {
+            'type': data.get('type'),
+            'timestamp': datetime.now().isoformat(),
+            'details': {
+                'relief': data.get('relief'),
+                'smell': data.get('smell')
+            }
+        }
+
+        # Append new entry to the list
+        entry.stool_entries.append(new_stool_entry)
+
+        # Update streak
+        entry.update_streak()
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error saving stool data: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/dashboard')
 def dashboard():
     if 'kit_id' not in session:
@@ -111,9 +222,9 @@ def dashboard():
     breakfast_logged = 'breakfast' in meals
     lunch_logged = 'lunch' in meals if not is_new_day or breakfast_logged else False
     dinner_logged = 'dinner' in meals if not is_new_day or lunch_logged else False
-    stool_logged = True if entry and entry.stool_type and not is_new_day else False
-    lifestyle_logged = True if entry and entry.lifestyle_log and not is_new_day else False
-    mood_logged = True if entry and entry.mood and not is_new_day else False
+    stool_logged = bool(entry and entry.stool_entries) and not is_new_day  # Check if any stool entries exist
+    lifestyle_logged = bool(entry and entry.lifestyle_log) and not is_new_day
+    mood_logged = bool(entry and entry.mood) and not is_new_day
 
     # Get streak information
     streak_info = TrackingEntry.get_user_streaks(session['kit_id'])
@@ -221,7 +332,7 @@ def track_stool():
         flash('Please log breakfast first', 'error')
         return redirect(url_for('dashboard'))
 
-    if entry and entry.stool_type:
+    if entry and entry.stool_entries:
         flash('Stool data already logged for today', 'error')
         return redirect(url_for('dashboard'))
 
@@ -340,104 +451,6 @@ def validate_kit(kit_id):
     except Exception as e:
         logging.error(f"Error during kit validation: {str(e)}")
         return jsonify({"valid": False, "error": "Internal server error"}), 500
-
-@app.route('/save-meal', methods=['POST'])
-def save_meal():
-    data = request.json
-    kit_id = data.get('kitId')
-    meal_type = data.get('type')
-    foods = data.get('foods', {})
-
-    try:
-        today = datetime.now().date()
-        current_time = datetime.now().time()
-        reset_time = time(3, 0)  # 3 AM reset time
-
-        # If it's before reset time, we should look at yesterday's entry
-        if current_time < reset_time:
-            today = today - timedelta(days=1)
-
-        # Check if this is breakfast during new day period
-        is_new_day = current_time >= reset_time and current_time <= time(12, 0)
-
-        entry = TrackingEntry.query.filter_by(
-            kit_id=kit_id,
-            date=today
-        ).first()
-
-        if not entry:
-            entry = TrackingEntry(
-                kit_id=kit_id,
-                date=today,
-                meals={}
-            )
-            db.session.add(entry)
-
-        # Initialize meals if None
-        if not entry.meals:
-            entry.meals = {}
-
-        # For breakfast during new day, always allow and save
-        if meal_type == 'breakfast' and is_new_day:
-            entry.meals[meal_type] = foods
-        # For other meals, check sequence
-        elif meal_type == 'lunch' and 'breakfast' not in entry.meals:
-            return jsonify({"success": False, "error": "Please log breakfast first"}), 400
-        elif meal_type == 'dinner' and 'lunch' not in entry.meals:
-            return jsonify({"success": False, "error": "Please log lunch first"}), 400
-        else:
-            entry.meals[meal_type] = foods
-
-        # Update streak
-        entry.update_streak()
-
-        db.session.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        logging.error(f"Error saving meal data: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/save-stool', methods=['POST'])
-def save_stool():
-    data = request.json
-    kit_id = data.get('kitId')
-
-    try:
-        today = datetime.now().date()
-        current_time = datetime.now().time()
-        reset_time = time(3, 0)  # 3 AM reset time
-
-        # If it's before reset time, we should look at yesterday's entry
-        if current_time < reset_time:
-            today = today - timedelta(days=1)
-
-        # Get today's entry
-        entry = TrackingEntry.query.filter_by(
-            kit_id=kit_id,
-            date=today
-        ).first()
-
-        if not entry:
-            entry = TrackingEntry(
-                kit_id=kit_id,
-                date=today
-            )
-            db.session.add(entry)
-
-        entry.stool_type = data.get('type')
-        entry.stool_details = {
-            'relief': data.get('relief'),
-            'smell': data.get('smell')
-        }
-
-        # Update streak
-        entry.update_streak()
-
-        db.session.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        logging.error(f"Error saving stool data: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/save-mood', methods=['POST'])
 def save_mood():
@@ -708,6 +721,7 @@ def insights():
         'dates': [],
         'moods': [],
         'stool_types': [],
+        'stool_entries': [],
         'breakfast_counts': [],
         'lunch_counts': [],
         'dinner_counts': []
@@ -717,7 +731,16 @@ def insights():
         date_str = entry.date.strftime('%Y-%m-%d')
         trend_data['dates'].append(date_str)
         trend_data['moods'].append(entry.mood if entry.mood else 0)
-        trend_data['stool_types'].append(int(entry.stool_type) if entry.stool_type else 0)
+
+        # Handle multiple stool entries
+        if entry.stool_entries:
+            # Get the most recent stool entry for the day
+            latest_stool = entry.stool_entries[-1]
+            trend_data['stool_types'].append(int(latest_stool['type']) if latest_stool.get('type') else 0)
+            trend_data['stool_entries'].append(latest_stool)
+        else:
+            trend_data['stool_types'].append(0)
+            trend_data['stool_entries'].append(None)
 
         # Count items in each meal
         meals = entry.meals or {}
@@ -730,8 +753,8 @@ def insights():
         trend_data['dinner_counts'].append(dinner_items)
 
     return render_template('insights.html', 
-                         has_data=True,
-                         trend_data=trend_data)
+                       has_data=True,
+                       trend_data=trend_data)
 
 @app.route('/test-reset')
 def test_reset():
@@ -766,13 +789,12 @@ def test_reset():
         'breakfast_logged': 'breakfast' in meals,  # Always show actual breakfast status
         'lunch_logged': 'lunch' in meals if not is_new_day or 'breakfast' in meals else False,
         'dinner_logged': 'dinner' in meals if not is_new_day or ('breakfast' in meals and 'lunch' in meals) else False,
-        'stool_logged': bool(entry and entry.stool_type and not is_new_day),
+        'stool_logged': bool(entry and entry.stool_entries and not is_new_day),
         'mood_logged': bool(entry and entry.mood and not is_new_day),
         'lifestyle_logged': bool(entry and entry.lifestyle_log and not is_new_day)
     }
 
     return jsonify(tracking_status)
-
 
 
 if __name__ == "__main__":
