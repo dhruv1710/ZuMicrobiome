@@ -89,7 +89,11 @@ def dashboard():
 
     today = datetime.now().date()
     current_time = datetime.now().time()
-    reset_time = time(6, 0)  # 6 AM
+    reset_time = time(3, 0)  # 3 AM reset time
+
+    # If it's before reset time, we should look at yesterday's entry
+    if current_time < reset_time:
+        today = today - timedelta(days=1)
 
     # Get today's entry
     entry = TrackingEntry.query.filter_by(
@@ -97,14 +101,18 @@ def dashboard():
         date=today
     ).first()
 
+    # If current time is after reset time and before noon, 
+    # we should allow breakfast tracking regardless of yesterday's entries
+    is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
     # Check meal logging status
     meals = entry.meals if entry else {}
-    breakfast_logged = 'breakfast' in meals
-    lunch_logged = 'lunch' in meals
-    dinner_logged = 'dinner' in meals
-    stool_logged = True if entry and entry.stool_type else False
-    lifestyle_logged = True if entry and entry.lifestyle_log else False
-    mood_logged = True if entry and entry.mood else False
+    breakfast_logged = 'breakfast' in meals if not is_new_day else False
+    lunch_logged = 'lunch' in meals if not is_new_day else False
+    dinner_logged = 'dinner' in meals if not is_new_day else False
+    stool_logged = True if entry and entry.stool_type and not is_new_day else False
+    lifestyle_logged = True if entry and entry.lifestyle_log and not is_new_day else False
+    mood_logged = True if entry and entry.mood and not is_new_day else False
 
     # Get streak information
     streak_info = TrackingEntry.get_user_streaks(session['kit_id'])
@@ -116,48 +124,8 @@ def dashboard():
     milestones = [7, 30, 100]
     next_milestone = next((m for m in milestones if m > current_streak), milestones[-1])
 
-    # Calculate group insights
-    entries = TrackingEntry.query.filter_by(date=today).all()
-
-    # Get top meals
-    all_meals = {'breakfast': {}, 'lunch': {}, 'dinner': {}}
-    for e in entries:
-        if e.meals:
-            for meal_type, items in e.meals.items():
-                for category, foods in items.items():
-                    for food in foods:
-                        all_meals[meal_type][food] = all_meals[meal_type].get(food, 0) + 1
-
-    top_meals = {
-        'breakfast': sorted(all_meals['breakfast'].items(), key=lambda x: x[1], reverse=True)[:3],
-        'lunch': sorted(all_meals['lunch'].items(), key=lambda x: x[1], reverse=True)[:3],
-        'dinner': sorted(all_meals['dinner'].items(), key=lambda x: x[1], reverse=True)[:3]
-    }
-
-    # Calculate mood distribution
-    total_entries = len(entries)
-    if total_entries > 0:
-        mood_distribution = {
-            'happy': len([e for e in entries if e.mood and e.mood >= 5]) / total_entries * 100,
-            'neutral': len([e for e in entries if e.mood and 3 <= e.mood < 5]) / total_entries * 100,
-            'sad': len([e for e in entries if e.mood and e.mood < 3]) / total_entries * 100
-        }
-
-        # Calculate resilience (based on mood stability throughout the day)
-        resilience_distribution = {
-            'high': len([e for e in entries if e.mood_details and 
-                        max(e.mood_details.values()) - min(e.mood_details.values()) <= 1]) / total_entries * 100,
-            'medium': len([e for e in entries if e.mood_details and 
-                         1 < max(e.mood_details.values()) - min(e.mood_details.values()) <= 2]) / total_entries * 100,
-            'low': len([e for e in entries if e.mood_details and 
-                       max(e.mood_details.values()) - min(e.mood_details.values()) > 2]) / total_entries * 100
-        }
-    else:
-        mood_distribution = {'happy': 0, 'neutral': 0, 'sad': 0}
-        resilience_distribution = {'high': 0, 'medium': 0, 'low': 0}
-
     return render_template('dashboard.html',
-                           mood_logged=mood_logged,
+                         mood_logged=mood_logged,
                          breakfast_logged=breakfast_logged,
                          lunch_logged=lunch_logged,
                          dinner_logged=dinner_logged,
@@ -166,20 +134,7 @@ def dashboard():
                          current_streak=current_streak,
                          best_streak=best_streak,
                          next_milestone=next_milestone,
-                         achievement_unlocked=achievement_unlocked,
-                         top_breakfast=[item[0] for item in top_meals['breakfast']],
-                         top_lunch=[item[0] for item in top_meals['lunch']],
-                         top_dinner=[item[0] for item in top_meals['dinner']],
-                         mood_distribution=[
-                             mood_distribution['happy'],
-                             mood_distribution['neutral'],
-                             mood_distribution['sad']
-                         ],
-                         resilience_distribution=[
-                             resilience_distribution['high'],
-                             resilience_distribution['medium'],
-                             resilience_distribution['low']
-                         ])
+                         achievement_unlocked=achievement_unlocked)
 
 @app.route('/')
 def index():
@@ -195,27 +150,42 @@ def track_meal(meal_type):
     if meal_type not in ['breakfast', 'lunch', 'dinner']:
         return redirect(url_for('dashboard'))
 
-    # Check if current meal can be logged
     today = datetime.now().date()
+    current_time = datetime.now().time()
+    reset_time = time(3, 0)  # 3 AM reset time
+
+    # If it's before reset time, we should look at yesterday's entry
+    if current_time < reset_time:
+        today = today - timedelta(days=1)
+
+    # Get today's entry
     entry = TrackingEntry.query.filter_by(
         kit_id=session['kit_id'],
         date=today
     ).first()
 
+    # If it's after reset time but before noon, treat as new day
+    is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
+    # During new day (after reset time and before noon), allow breakfast
+    if is_new_day and meal_type == 'breakfast':
+        return render_template('track_meal.html', meal_type=meal_type)
+
     meals = entry.meals if entry else {}
 
-    # Check meal sequence
-    if meal_type == 'lunch' and 'breakfast' not in meals:
-        flash('Please log breakfast first', 'error')
-        return redirect(url_for('dashboard'))
-    elif meal_type == 'dinner' and 'lunch' not in meals:
-        flash('Please log lunch first', 'error')
-        return redirect(url_for('dashboard'))
+    # Check meal sequence only if it's not a new day
+    if not is_new_day:
+        if meal_type == 'lunch' and 'breakfast' not in meals:
+            flash('Please log breakfast first', 'error')
+            return redirect(url_for('dashboard'))
+        elif meal_type == 'dinner' and 'lunch' not in meals:
+            flash('Please log lunch first', 'error')
+            return redirect(url_for('dashboard'))
 
-    # Check if meal already logged
-    if meals and meal_type in meals:
-        flash(f'{meal_type.capitalize()} already logged for today', 'error')
-        return redirect(url_for('dashboard'))
+        # Check if meal already logged
+        if meal_type in meals:
+            flash(f'{meal_type.capitalize()} already logged for today', 'error')
+            return redirect(url_for('dashboard'))
 
     return render_template('track_meal.html', meal_type=meal_type)
 
@@ -224,18 +194,29 @@ def track_stool():
     if 'kit_id' not in session:
         return redirect(url_for('index'))
 
-    # Check if breakfast is logged
     today = datetime.now().date()
+    current_time = datetime.now().time()
+    reset_time = time(3, 0)  # 3 AM reset time
+
+    # If it's before reset time, we should look at yesterday's entry
+    if current_time < reset_time:
+        today = today - timedelta(days=1)
+
+    # Get today's entry
     entry = TrackingEntry.query.filter_by(
         kit_id=session['kit_id'],
         date=today
     ).first()
 
-    if not entry or 'breakfast' not in entry.meals:
+    # If it's after reset time but before noon, treat as new day
+    is_new_day = current_time >= reset_time and current_time <= time(12, 0)
+
+    # During new day, don't require breakfast
+    if not is_new_day and (not entry or 'breakfast' not in entry.meals):
         flash('Please log breakfast first', 'error')
         return redirect(url_for('dashboard'))
 
-    if entry.stool_type:
+    if entry and entry.stool_type and not is_new_day:
         flash('Stool data already logged for today', 'error')
         return redirect(url_for('dashboard'))
 

@@ -112,9 +112,9 @@
 
     function proceedWithNavigation(data, kitId) {
         if (data.has_tracked) {
-            window.location.href = `/insights/${kitId}`;
+            window.location.href = `/dashboard`;
         } else if (data.has_previous_entries) {
-            window.location.href = `/insights/${kitId}`;
+            window.location.href = `/dashboard`;
         } else {
             window.location.href = '/dashboard';
         }
