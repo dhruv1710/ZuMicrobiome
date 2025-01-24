@@ -8,7 +8,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from database import db
 from sqlalchemy import update
-from models import Admin, AnonymousUser, KitCode, TrackingEntry
+from models import Admin, AnonymousUser, KitCode, TrackingEntry, DailyMenu # Added DailyMenu import
+
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -410,21 +411,25 @@ def track_mood():
 
 @app.route('/get-menu-data')
 def get_menu_data():
-    kit_id = request.args.get('kitId')
     meal_type = request.args.get('meal_type')
-
-    if not kit_id:
-        logging.debug("No kit ID provided in get-menu-data request")
-        return jsonify({"error": "No kit ID provided"}), 400
 
     if not meal_type:
         logging.debug("No meal type provided in get-menu-data request")
         return jsonify({"error": "No meal type provided"}), 400
 
-    logging.debug(f"Fetching menu data for kit ID: {kit_id}")
-    kit_code = KitCode.query.filter_by(code=kit_id, is_active=True).first()
+    # Get current date considering reset time
+    current_time = datetime.now().time()
+    reset_time = time(3, 0)
+    current_date = datetime.now().date()
 
-    # If no menu data found, return default menu data
+    # If before reset time, use previous day's menu
+    if current_time < reset_time:
+        current_date = current_date - timedelta(days=1)
+
+    logging.debug(f"Fetching menu data for date: {current_date}")
+    daily_menu = DailyMenu.get_menu_for_date(current_date)
+
+    # Default menu data if no menu is set for today
     default_menu_data = {
         "breakfast": {
             "Beverages": {
@@ -442,16 +447,38 @@ def get_menu_data():
                 "Greek Yogurt": {},
                 "Tofu Scramble": {}
             }
+        },
+        "lunch": {
+            "Main Course": {
+                "Grilled Chicken": {},
+                "Vegetable Stir Fry": {},
+                "Quinoa Bowl": {}
+            },
+            "Sides": {
+                "Mixed Salad": {},
+                "Steamed Vegetables": {},
+                "Brown Rice": {}
+            }
+        },
+        "dinner": {
+            "Main Course": {
+                "Baked Fish": {},
+                "Lentil Curry": {},
+                "Tofu Steak": {}
+            },
+            "Sides": {
+                "Roasted Vegetables": {},
+                "Quinoa": {},
+                "Sweet Potato": {}
+            }
         }
     }
 
-    if kit_code and kit_code.menu_data:
-        logging.debug(
-            f"Found menu data for kit ID {kit_id}: {kit_code.menu_data}")
-        return jsonify({"menu_data": kit_code.menu_data})
+    if daily_menu and daily_menu.menu_data:
+        logging.debug(f"Found menu data for date {current_date}: {daily_menu.menu_data}")
+        return jsonify({"menu_data": daily_menu.menu_data})
 
-    logging.debug(
-        f"No menu data found for kit ID: {kit_id}, returning default menu")
+    logging.debug(f"No menu data found for date: {current_date}, returning default menu")
     return jsonify({"menu_data": default_menu_data})
 
 
@@ -604,8 +631,6 @@ def admin_dashboard():
 def import_kit_codes():
     batch_name = request.form.get('batch_name')
     codes = request.form.get('codes').strip().split('\n')
-    menu_data = request.form.get('menu_data')
-
     admin_id = session.get('admin_id')
 
     for code in codes:
@@ -613,7 +638,6 @@ def import_kit_codes():
         if code:
             kit_code = KitCode(code=code,
                                batch_name=batch_name,
-                               menu_data=menu_data,
                                created_by=admin_id)
             db.session.add(kit_code)
 
@@ -627,15 +651,12 @@ def import_kit_codes():
 def generate_kit_codes():
     batch_name = request.form.get('batch_name')
     quantity = int(request.form.get('quantity', 10))
-    menu_data = request.form.get('menu_data')
-
     admin_id = session.get('admin_id')
 
     for _ in range(quantity):
         code = str(uuid.uuid4())
         kit_code = KitCode(code=code,
                            batch_name=batch_name,
-                           menu_data=menu_data,
                            created_by=admin_id)
         db.session.add(kit_code)
 
@@ -900,5 +921,33 @@ def test_reset():
 
     return jsonify(tracking_status)
 
+
+@app.route('/admin/set-daily-menu', methods=['POST'])
+@admin_required
+def set_daily_menu():
+    try:
+        menu_data = request.json.get('menu_data')
+        if not menu_data:
+            return jsonify({"success": False, "error": "Menu data is required"}), 400
+
+        current_date = datetime.now().date()
+
+        # Check if menu already exists for today
+        daily_menu = DailyMenu.get_menu_for_date(current_date)
+        if daily_menu:
+            daily_menu.menu_data = menu_data
+        else:
+            daily_menu = DailyMenu(
+                date=current_date,
+                menu_data=menu_data,
+                created_by=session['admin_id']
+            )
+            db.session.add(daily_menu)
+
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        logging.error(f"Error setting daily menu: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__": app.run(host="0.0.0.0", port=5000, debug=True)

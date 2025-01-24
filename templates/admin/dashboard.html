@@ -11,6 +11,21 @@
         </div>
     </div>
 
+    <!-- Daily Menu Management -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Manage Daily Menu</h3>
+            <form id="dailyMenuForm" onsubmit="submitDailyMenu(event)">
+                <div class="mb-3">
+                    <label for="menu_data" class="form-label">Menu Data (JSON)</label>
+                    <textarea class="form-control" id="menu_data" name="menu_data" rows="10" required></textarea>
+                    <small class="text-muted">Enter the menu options in JSON format. This menu will be shown to all users today.</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Set Today's Menu</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Kit Code Import -->
     <div class="card mb-4">
         <div class="card-body">
@@ -23,11 +38,6 @@
                 <div class="mb-3">
                     <label for="codes" class="form-label">Kit Codes (one per line)</label>
                     <textarea class="form-control" id="codes" name="codes" rows="5" required></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="menu_data" class="form-label">Menu Data (JSON)</label>
-                    <textarea class="form-control" id="menu_data" name="menu_data" rows="5"></textarea>
-                    <small class="text-muted">Enter the menu options in JSON format</small>
                 </div>
                 <button type="submit" class="btn btn-primary">Import Codes</button>
             </form>
@@ -46,11 +56,6 @@
                 <div class="mb-3">
                     <label for="quantity" class="form-label">Number of Codes</label>
                     <input type="number" class="form-control" id="quantity" name="quantity" min="1" max="100" value="10">
-                </div>
-                <div class="mb-3">
-                    <label for="menu_data" class="form-label">Menu Data (JSON)</label>
-                    <textarea class="form-control" id="menu_data" name="menu_data" rows="5"></textarea>
-                    <small class="text-muted">Enter the menu options in JSON format</small>
                 </div>
                 <button type="submit" class="btn btn-primary">Generate Codes</button>
             </form>
@@ -98,4 +103,38 @@
         </div>
     </div>
 </div>
+
+<script>
+async function submitDailyMenu(event) {
+    event.preventDefault();
+    const form = event.target;
+    const menuData = form.menu_data.value;
+
+    try {
+        // Validate JSON
+        JSON.parse(menuData);
+
+        const response = await fetch('/admin/set-daily-menu', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                menu_data: JSON.parse(menuData)
+            })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Daily menu updated successfully');
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to update daily menu');
+        }
+    } catch (error) {
+        alert('Invalid JSON format');
+        console.error('Error:', error);
+    }
+}
+</script>
 {% endblock %}

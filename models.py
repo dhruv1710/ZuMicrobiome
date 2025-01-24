@@ -19,11 +19,21 @@ class Admin(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
+class DailyMenu(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    menu_data = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    created_by = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
+
+    @classmethod
+    def get_menu_for_date(cls, date):
+        return cls.query.filter_by(date=date).first()
+
 class KitCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(36), unique=True, nullable=False)
     batch_name = db.Column(db.String(100), nullable=False)
-    menu_data = db.Column(db.JSON)
     created_by = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     is_active = db.Column(db.Boolean, default=True)
@@ -33,7 +43,7 @@ class TrackingEntry(db.Model):
     kit_id = db.Column(db.String(36), nullable=False)
     date = db.Column(db.DateTime, server_default=db.func.now())
     meals = db.Column(db.JSON)
-    stool_entries = db.Column(db.JSON)  # Changed from stool_type to stool_entries to store multiple entries
+    stool_entries = db.Column(db.JSON)
     mood = db.Column(db.Integer)
     mood_details = db.Column(db.JSON)
     shared_with_community = db.Column(db.Boolean, default=True)
