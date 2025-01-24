@@ -935,7 +935,9 @@ def set_daily_menu():
         # Check if menu already exists for today
         daily_menu = DailyMenu.get_menu_for_date(current_date)
         if daily_menu:
-            daily_menu.menu_data = menu_data
+            stmt = update(DailyMenu).where(
+                DailyMenu.date == current_date).values(meals=menu_data)
+            updt = db.session.execute(stmt)
         else:
             daily_menu = DailyMenu(
                 date=current_date,
@@ -943,7 +945,8 @@ def set_daily_menu():
                 created_by=session['admin_id']
             )
             db.session.add(daily_menu)
-
+        
+        
         db.session.commit()
         return jsonify({"success": True})
     except Exception as e:

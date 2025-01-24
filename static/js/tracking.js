@@ -1,10 +1,11 @@
 // Menu data loading and manipulation
 async function loadMenuData(mealType) {
-    try {
+    // try {
         const kitId = localStorage.getItem('kitId');
         const response = await fetch(`/get-menu-data?kitId=${kitId}&meal_type=${mealType}`);
         const data = await response.json();
-        parsed = JSON.parse(data.menu_data)[mealType];
+        console.log(data);
+        parsed = data.menu_data[mealType];
         if (parsed) {
             const contentDiv = document.getElementById(`${mealType}-content`);
             if (!contentDiv) {
@@ -64,9 +65,9 @@ async function loadMenuData(mealType) {
         } else {
             console.warn('No data available for the specified meal type');
         }
-    } catch (error) {
-        console.error('Error loading menu data:', error);
-    }
+    // } catch (error) {
+    //     console.error('Error loading menu data:', error);
+    // }
 }
 
 // Save meal data
